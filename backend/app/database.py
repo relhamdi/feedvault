@@ -1,4 +1,4 @@
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 import app.models  # noqa: F401 - Trigger loading of all models
 from app.config import settings
@@ -13,7 +13,3 @@ engine = create_engine(
 def get_session():
     with Session(engine) as session:
         yield session
-
-
-def init_db():
-    SQLModel.metadata.create_all(engine)
