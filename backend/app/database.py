@@ -1,5 +1,6 @@
 from sqlmodel import Session, SQLModel, create_engine
 
+import app.models  # noqa: F401 - Trigger loading of all models
 from app.config import settings
 
 engine = create_engine(
