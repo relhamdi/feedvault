@@ -11,3 +11,7 @@ wheels/
 
 # Credentials
 .env
+
+# Runtime data
+media/
+*.db
