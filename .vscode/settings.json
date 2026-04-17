@@ -4,5 +4,6 @@
     "editor.codeActionsOnSave": {
         "source.organizeImports": "explicit",
         "source.sortImports": "always"
-    }
+    },
+    "python.analysis.extraPaths": ["backend"]
 }
