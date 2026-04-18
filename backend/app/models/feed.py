@@ -18,6 +18,7 @@ class FeedBase(SQLModel):
     default_tags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     is_active: bool = True
     last_scraped_at: datetime | None = None
+    params: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class Feed(FeedBase, table=True):
@@ -40,6 +41,7 @@ class FeedUpdate(SQLModel):
     color: str | None = None
     default_tags: list[str] | None = None
     is_active: bool | None = None
+    params: dict | None = None
 
 
 class FeedRead(FeedBase):

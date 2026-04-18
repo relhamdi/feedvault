@@ -30,7 +30,7 @@ class ItemBase(SQLModel):
     is_nsfw: bool = False
     is_public: bool = True
     source_published_at: datetime
-    source_updated_at: datetime | None = None
+    source_updated_at: datetime
     scraped_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_scraped_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_seen_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
