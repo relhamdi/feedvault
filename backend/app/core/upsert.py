@@ -11,6 +11,7 @@ from app.models.feed import Feed
 from app.models.item import Item
 from app.models.item_media import ItemMedia, MediaType
 from app.models.links import ItemCategoryLink
+from app.models.source import Source
 
 
 def _upsert_author(session: Session, raw: RawAuthor, source_id: int) -> Author:
@@ -170,7 +171,9 @@ def upsert_item(
             thumbnail_path = str(dest)
 
     # --- Tags: custom + inherited from feed and source ---
-    tags = normalize_tags(normalized.tags + list(feed.default_tags or []))
+    source = session.get(Source, feed.source_id)
+    source_tags = list(source.default_tags or []) if source else []
+    tags = normalize_tags(normalized.tags + list(feed.default_tags or []) + source_tags)
 
     # --- Item upsert ---
     item = session.exec(
