@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlmodel import Session, select
 
@@ -166,9 +167,9 @@ def upsert_item(
         if not dest.exists():
             success = download_and_compress(normalized.thumbnail_url, dest)
             if success:
-                thumbnail_path = str(dest)
+                thumbnail_path = str(Path(*dest.parts[1:]))
         else:
-            thumbnail_path = str(dest)
+            thumbnail_path = str(Path(*dest.parts[1:]))
 
     # --- Tags: custom + inherited from feed and source ---
     source = session.get(Source, feed.source_id)
