@@ -1,0 +1,50 @@
+from io import BytesIO
+from pathlib import Path
+
+import httpx
+from PIL import Image
+
+from app.config import settings
+
+MAX_SIZE = (150, 200)
+QUALITY = 75
+
+
+def download_and_compress(url: str, dest: Path) -> bool:
+    """Download a remote image, compresses it to WebP, and saves it.
+
+    Args:
+        url (str): File to download
+        dest (Path): Save path.
+
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    try:
+        with httpx.Client(timeout=10) as client:
+            response = client.get(url)
+            response.raise_for_status()
+
+        image = Image.open(BytesIO(response.content))
+        image.thumbnail(MAX_SIZE, Image.Resampling.LANCZOS)
+
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        image.save(dest, format="WEBP", quality=QUALITY)
+        return True
+
+    except Exception:
+        return False
+
+
+def get_thumbnail_path(source_slug: str, external_id: str) -> Path:
+    """Return the local WebP path for an item.
+
+    Args:
+        source_slug (str): Source slug.
+        external_id (str): Item ID.
+
+    Returns:
+        Path: Local path for the item.
+    """
+    media_dir = Path(settings.media_dir)
+    return media_dir / source_slug / f"{external_id}.webp"
