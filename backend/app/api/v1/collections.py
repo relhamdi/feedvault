@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 from sqlmodel import Session, and_, col, or_, select
 
 from app.core.tags import normalize_tags
