@@ -87,6 +87,7 @@ class NormalizedItem(BaseModel):
     tags: list[str] = []
     stats: dict[str, Any] = {}
     raw_extra: dict[str, Any] = {}
+    meta: dict = {}
     is_nsfw: bool = False
     is_public: bool = True
     source_published_at: datetime

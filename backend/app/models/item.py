@@ -25,6 +25,7 @@ class ItemBase(SQLModel):
     tags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     stats: dict = Field(default_factory=dict, sa_column=Column(JSON))
     raw_extra: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    meta: dict = Field(default_factory=dict, sa_column=Column(JSON))
     is_read: bool = False
     is_favorite: bool = False
     is_nsfw: bool = False
@@ -60,6 +61,7 @@ class ItemUpdate(SQLModel):
     is_nsfw: bool | None = None
     is_public: bool | None = None
     tags: list[str] | None = None
+    meta: dict | None = None
 
 
 class ItemRead(ItemBase):

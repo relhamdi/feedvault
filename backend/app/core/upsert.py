@@ -196,6 +196,7 @@ def upsert_item(
             tags=tags,
             stats=normalized.stats,
             raw_extra=normalized.raw_extra,
+            meta=normalized.meta,
             is_nsfw=normalized.is_nsfw,
             is_public=normalized.is_public,
             source_published_at=normalized.source_published_at,
@@ -212,6 +213,7 @@ def upsert_item(
         item.tags = tags
         item.stats = normalized.stats
         item.raw_extra = normalized.raw_extra
+        item.meta = normalized.meta
         item.is_nsfw = normalized.is_nsfw
         item.is_public = normalized.is_public
         item.source_updated_at = normalized.source_updated_at
