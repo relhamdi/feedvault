@@ -23,6 +23,8 @@ router = APIRouter()
 class ScrapeRequest(BaseModel):
     feed_id: int
     mode: ScrapeMode = ScrapeMode.INCREMENTAL
+    date_from: datetime | None = None
+    date_to: datetime | None = None
 
 
 def _get_scraper(source: Source, feed: Feed, session: Session) -> BaseSource:
@@ -58,9 +60,10 @@ def scrape(payload: ScrapeRequest, session: Session = Depends(get_session)):
         target_type=ScrapeTargetType.FEED,
         target_id=feed.id,
         mode=payload.mode,
-        date_from=feed.last_scraped_at
-        if payload.mode == ScrapeMode.INCREMENTAL
-        else None,
+        date_from=payload.date_from
+        if payload.mode == ScrapeMode.RANGE
+        else (feed.last_scraped_at if payload.mode == ScrapeMode.INCREMENTAL else None),
+        date_to=payload.date_to if payload.mode == ScrapeMode.RANGE else None,
     )
 
     scraper = _get_scraper(source, feed, session)
