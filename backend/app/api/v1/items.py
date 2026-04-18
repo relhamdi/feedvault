@@ -1,3 +1,5 @@
+from enum import Enum
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, col, select
@@ -17,6 +19,18 @@ class ItemCreateWithRelations(BaseModel):
     media: list[ItemMediaCreate] = []
 
 
+class ItemSortField(str, Enum):
+    SOURCE_PUBLISHED_AT = "source_published_at"
+    SOURCE_UPDATED_AT = "source_updated_at"
+    SCRAPED_AT = "scraped_at"
+    LAST_SCRAPED_AT = "last_scraped_at"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
 @router.get("/", response_model=list[ItemRead])
 def list_items(
     feed_id: int | None = Query(default=None),
@@ -24,10 +38,25 @@ def list_items(
     is_favorite: bool | None = Query(default=None),
     is_nsfw: bool | None = Query(default=None),
     is_public: bool | None = Query(default=None),
+    sort_by: ItemSortField = Query(default=ItemSortField.SOURCE_UPDATED_AT),
+    sort_order: SortOrder = Query(default=SortOrder.DESC),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0),
     session: Session = Depends(get_session),
 ):
+    sort_column = {
+        ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
+        ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
+        ItemSortField.SCRAPED_AT: Item.scraped_at,
+        ItemSortField.LAST_SCRAPED_AT: Item.last_scraped_at,
+    }[sort_by]
+
+    order = (
+        col(sort_column).desc()
+        if sort_order == SortOrder.DESC
+        else col(sort_column).asc()
+    )
+
     query = select(Item)
     if feed_id is not None:
         query = query.where(Item.feed_id == feed_id)
@@ -39,9 +68,8 @@ def list_items(
         query = query.where(Item.is_nsfw == is_nsfw)
     if is_public is not None:
         query = query.where(Item.is_public == is_public)
-    query = (
-        query.order_by(col(Item.source_published_at).desc()).offset(offset).limit(limit)
-    )
+
+    query = query.order_by(order).offset(offset).limit(limit)
     return session.exec(query).all()
 
 
