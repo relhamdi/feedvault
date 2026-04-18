@@ -48,6 +48,7 @@ def _upsert_category(
         select(Category).where(
             Category.name == raw.name,
             Category.source_id == source_id,
+            Category.parent_id == (parent.id if parent else None),
         )
     ).first()
 
