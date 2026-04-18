@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from app.core.image import download_and_compress, get_thumbnail_path
 from app.core.sources.models import NormalizedItem, RawAuthor, RawCategory, RawMedia
+from app.core.tags import normalize_tags
 from app.models.author import Author
 from app.models.category import Category
 from app.models.feed import Feed
@@ -169,7 +170,7 @@ def upsert_item(
             thumbnail_path = str(dest)
 
     # --- Tags: custom + inherited from feed and source ---
-    tags = list(set(normalized.tags + list(feed.default_tags or [])))
+    tags = normalize_tags(normalized.tags + list(feed.default_tags or []))
 
     # --- Item upsert ---
     item = session.exec(
