@@ -1,18 +1,12 @@
 from datetime import UTC, datetime
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.sources.models import RawMediaType as MediaType
+
 if TYPE_CHECKING:
     from app.models.item import Item
-
-
-class MediaType(str, Enum):
-    IMAGE = "image"
-    FILE = "file"
-    LINK = "link"
-    CODE = "code"
 
 
 class ItemMediaBase(SQLModel):
