@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -25,6 +25,14 @@ class ScrapeRequest(BaseModel):
     mode: ScrapeMode = ScrapeMode.INCREMENTAL
     date_from: datetime | None = None
     date_to: datetime | None = None
+
+
+def _make_aware(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 def _get_scraper(source: Source, feed: Feed, session: Session) -> BaseSource:
@@ -60,10 +68,16 @@ def scrape(payload: ScrapeRequest, session: Session = Depends(get_session)):
         target_type=ScrapeTargetType.FEED,
         target_id=feed.id,
         mode=payload.mode,
-        date_from=payload.date_from
-        if payload.mode == ScrapeMode.RANGE
-        else (feed.last_scraped_at if payload.mode == ScrapeMode.INCREMENTAL else None),
-        date_to=payload.date_to if payload.mode == ScrapeMode.RANGE else None,
+        date_from=_make_aware(
+            payload.date_from
+            if payload.mode == ScrapeMode.RANGE
+            else (
+                feed.last_scraped_at if payload.mode == ScrapeMode.INCREMENTAL else None
+            )
+        ),
+        date_to=_make_aware(
+            payload.date_to if payload.mode == ScrapeMode.RANGE else None
+        ),
     )
 
     scraper = _get_scraper(source, feed, session)
