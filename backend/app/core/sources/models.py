@@ -84,6 +84,7 @@ class NormalizedItem(BaseModel):
     description: str | None = None
     summary: str | None = None
     thumbnail_url: str | None = None  # Remote URL, downloaded afterward
+    thumbnail_sub_path: str | None = None  # Optional sub path for thumbnail storage
     tags: list[str] = []
     stats: dict[str, Any] = {}
     raw_extra: dict[str, Any] = {}

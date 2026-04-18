@@ -36,15 +36,23 @@ def download_and_compress(url: str, dest: Path) -> bool:
         return False
 
 
-def get_thumbnail_path(source_slug: str, external_id: str) -> Path:
+def get_thumbnail_path(
+    source_slug: str,
+    external_id: str,
+    sub_path: str | None = None,
+) -> Path:
     """Return the local WebP path for an item.
 
     Args:
         source_slug (str): Source slug.
         external_id (str): Item ID.
+        sub_path (str | None, optional): Optional sub path for the thumbnail. 
+            Defaults to None.
 
     Returns:
         Path: Local path for the item.
     """
     media_dir = Path(settings.media_dir)
+    if sub_path:
+        return media_dir / source_slug / sub_path / f"{external_id}.webp"
     return media_dir / source_slug / f"{external_id}.webp"

@@ -163,7 +163,7 @@ def upsert_item(
     # --- Thumbnail ---
     thumbnail_path = None
     if normalized.thumbnail_url:
-        dest = get_thumbnail_path(source_slug, normalized.external_id)
+        dest = get_thumbnail_path(source_slug, normalized.external_id, normalized.thumbnail_sub_path)
         if not dest.exists():
             success = download_and_compress(normalized.thumbnail_url, dest)
             if success:
