@@ -1,8 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON
 from sqlmodel import Column, Field, Relationship, SQLModel
+
+from app.models.base import TimestampModel
 
 if TYPE_CHECKING:
     from app.models.item import Item
@@ -21,10 +23,8 @@ class FeedBase(SQLModel):
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
 
-class Feed(FeedBase, table=True):
+class Feed(FeedBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     source: "Source" = Relationship(back_populates="feeds")
     items: list["Item"] = Relationship(back_populates="feed")
@@ -44,7 +44,5 @@ class FeedUpdate(SQLModel):
     params: dict | None = None
 
 
-class FeedRead(FeedBase):
+class FeedRead(FeedBase, TimestampModel):
     id: int
-    created_at: datetime
-    updated_at: datetime

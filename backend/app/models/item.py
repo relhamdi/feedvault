@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import JSON
 from sqlmodel import Column, Field, Relationship, SQLModel
 
+from app.models.base import TimestampModel
 from app.models.links import ItemCategoryLink
 
 if TYPE_CHECKING:
@@ -37,10 +38,8 @@ class ItemBase(SQLModel):
     last_seen_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class Item(ItemBase, table=True):
+class Item(ItemBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     feed: "Feed" = Relationship(back_populates="items")
     author: "Author" = Relationship(back_populates="items")
@@ -64,7 +63,5 @@ class ItemUpdate(SQLModel):
     meta: dict | None = None
 
 
-class ItemRead(ItemBase):
+class ItemRead(ItemBase, TimestampModel):
     id: int
-    created_at: datetime
-    updated_at: datetime

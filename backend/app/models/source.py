@@ -1,9 +1,11 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON
 from sqlmodel import Column, Field, Relationship, SQLModel
+
+from app.models.base import TimestampModel
 
 if TYPE_CHECKING:
     from app.models.feed import Feed
@@ -27,10 +29,8 @@ class SourceBase(SQLModel):
     last_scraped_at: datetime | None = None
 
 
-class Source(SourceBase, table=True):
+class Source(SourceBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     credentials: bytes | None = None
 
     feeds: list["Feed"] = Relationship(back_populates="source")
@@ -50,7 +50,5 @@ class SourceUpdate(SQLModel):
     is_active: bool | None = None
 
 
-class SourceRead(SourceBase):
+class SourceRead(SourceBase, TimestampModel):
     id: int
-    created_at: datetime
-    updated_at: datetime
