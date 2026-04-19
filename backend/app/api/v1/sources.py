@@ -1,10 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
 from app.models.source import Source, SourceCreate, SourceRead, SourceUpdate
 
 router = APIRouter()
+
+
+class BootstrapAllResult(BaseModel):
+    created: list[SourceRead]
+    existing: list[SourceRead]
 
 
 @router.get("/", response_model=list[SourceRead])
@@ -57,3 +64,64 @@ def delete_source(source_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Source not found")
     session.delete(source)
     session.commit()
+
+
+# --- Bootstrap routes ---
+
+
+def _bootstrap_one(slug: str, session: Session) -> tuple[Source, bool]:
+    """Create a source from its registered default_source metadata."""
+    reg = get_registration(slug)
+    if reg is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No scraper registered for slug '{slug}'. "
+            f"Available: {registered_slugs() or 'none'}",
+        )
+    if not reg.default_source:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scraper '{slug}' has no default_source metadata defined.",
+        )
+
+    existing = session.exec(select(Source).where(Source.slug == slug)).first()
+    if existing:
+        return existing, False
+
+    source = Source.model_validate({**reg.default_source, "slug": slug})
+    session.add(source)
+    session.commit()
+    session.refresh(source)
+    return source, True
+
+
+@router.post("/bootstrap/{slug}", response_model=SourceRead)
+def bootstrap_source(
+    slug: str,
+    response: Response,
+    session: Session = Depends(get_session),
+):
+    """Initialize a single source from its scraper's default metadata.
+
+    Returns 201 if created, 200 if the source already existed.
+    """
+    source, created = _bootstrap_one(slug, session)
+    response.status_code = 201 if created else 200
+    return source
+
+
+@router.post("/bootstrap", response_model=BootstrapAllResult)
+def bootstrap_all_sources(session: Session = Depends(get_session)):
+    """Initialize all sources that have default_source metadata defined.
+
+    Skips sources already present in the database.
+    Returns the list of all bootstrapped sources (created or existing).
+    """
+
+    created, existing = [], []
+    for slug, reg in _REGISTRY.items():
+        if not reg.default_source:
+            continue
+        source, was_created = _bootstrap_one(slug, session)
+        (created if was_created else existing).append(source)
+    return BootstrapAllResult(created=created, existing=existing)
