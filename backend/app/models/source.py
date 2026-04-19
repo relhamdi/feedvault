@@ -23,7 +23,6 @@ class SourceBase(SQLModel):
     source_type: SourceType
     base_url: str
     default_tags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    credentials: bytes | None = None
     is_active: bool = True
     last_scraped_at: datetime | None = None
 
@@ -32,6 +31,7 @@ class Source(SourceBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    credentials: bytes | None = None
 
     feeds: list["Feed"] = Relationship(back_populates="source")
 
