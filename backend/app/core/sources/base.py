@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Session
 
@@ -31,6 +31,10 @@ class BaseSource(ABC):
     def map(self, raw: RawItem) -> NormalizedItem:
         """Transform a RawItem into a NormalizedItem."""
         ...
+
+    def _ts_to_dt(self, ts: int) -> datetime:
+        """Convert a UNIX timestamp to a timezone-aware UTC datetime."""
+        return datetime.fromtimestamp(ts, tz=UTC)
 
     def should_stop(self, item_date: datetime, job: ScrapeJob) -> bool:
         """
