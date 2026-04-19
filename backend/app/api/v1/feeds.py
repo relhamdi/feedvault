@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
+from app.core.crud import apply_patch, delete_obj, get_or_404
 from app.database import get_session
 from app.models.feed import Feed, FeedCreate, FeedRead, FeedUpdate
 
@@ -18,16 +19,12 @@ def list_feeds(
     query = select(Feed)
     if source_id is not None:
         query = query.where(Feed.source_id == source_id)
-    query = query.offset(offset).limit(limit)
-    return session.exec(query).all()
+    return session.exec(query.offset(offset).limit(limit)).all()
 
 
 @router.get("/{feed_id}", response_model=FeedRead)
 def get_feed(feed_id: int, session: Session = Depends(get_session)):
-    feed = session.get(Feed, feed_id)
-    if not feed:
-        raise HTTPException(status_code=404, detail="Feed not found")
-    return feed
+    return get_or_404(session, Feed, feed_id)
 
 
 @router.post("/", response_model=FeedRead, status_code=201)
@@ -45,21 +42,9 @@ def update_feed(
     feed_in: FeedUpdate,
     session: Session = Depends(get_session),
 ):
-    feed = session.get(Feed, feed_id)
-    if not feed:
-        raise HTTPException(status_code=404, detail="Feed not found")
-    data = feed_in.model_dump(exclude_unset=True)
-    feed.sqlmodel_update(data)
-    session.add(feed)
-    session.commit()
-    session.refresh(feed)
-    return feed
+    return apply_patch(session, get_or_404(session, Feed, feed_id), feed_in)
 
 
 @router.delete("/{feed_id}", status_code=204)
 def delete_feed(feed_id: int, session: Session = Depends(get_session)):
-    feed = session.get(Feed, feed_id)
-    if not feed:
-        raise HTTPException(status_code=404, detail="Feed not found")
-    session.delete(feed)
-    session.commit()
+    delete_obj(session, get_or_404(session, Feed, feed_id))

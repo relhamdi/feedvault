@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from app.core.crud import get_or_404
 from app.core.sources.base import BaseSource
 from app.core.sources.models import (
     ScrapeJob,
@@ -64,15 +65,10 @@ def _get_scraper(source: Source, feed: Feed, session: Session) -> BaseSource:
 
 @router.post("/", response_model=ScrapeResult)
 def scrape(payload: ScrapeRequest, session: Session = Depends(get_session)):
-    feed = session.get(Feed, payload.feed_id)
-    if not feed:
-        raise HTTPException(status_code=404, detail="Feed not found")
-
+    feed = get_or_404(session, Feed, payload.feed_id)
     assert feed.id is not None
 
-    source = session.get(Source, feed.source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
+    source = get_or_404(session, Source, feed.source_id)
 
     job = ScrapeJob(
         target_type=ScrapeTargetType.FEED,

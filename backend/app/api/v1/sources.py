@@ -1,10 +1,9 @@
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
+from app.core.crud import apply_patch, delete_obj, get_or_404
 from app.core.crypto import encrypt_credentials
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
@@ -29,10 +28,7 @@ def list_sources(
 
 @router.get("/{source_id}", response_model=SourceRead)
 def get_source(source_id: int, session: Session = Depends(get_session)):
-    source = session.get(Source, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
-    return source
+    return get_or_404(session, Source, source_id)
 
 
 @router.post("/", response_model=SourceRead, status_code=201)
@@ -50,24 +46,12 @@ def update_source(
     source_in: SourceUpdate,
     session: Session = Depends(get_session),
 ):
-    source = session.get(Source, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
-    data = source_in.model_dump(exclude_unset=True)
-    source.sqlmodel_update(data)
-    session.add(source)
-    session.commit()
-    session.refresh(source)
-    return source
+    return apply_patch(session, get_or_404(session, Source, source_id), source_in)
 
 
 @router.delete("/{source_id}", status_code=204)
 def delete_source(source_id: int, session: Session = Depends(get_session)):
-    source = session.get(Source, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
-    session.delete(source)
-    session.commit()
+    delete_obj(session, get_or_404(session, Source, source_id))
 
 
 @router.put("/{source_id}/credentials", response_model=SourceRead)
@@ -77,11 +61,8 @@ def update_credentials(
     session: Session = Depends(get_session),
 ):
     """Encrypt and store credentials for a source."""
-    source = session.get(Source, source_id)
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
+    source = get_or_404(session, Source, source_id)
     source.credentials = encrypt_credentials(credentials)
-    source.updated_at = datetime.now(UTC)
     session.add(source)
     session.commit()
     session.refresh(source)

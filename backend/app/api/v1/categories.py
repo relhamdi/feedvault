@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
+from app.core.crud import delete_obj, get_or_404
 from app.database import get_session
 from app.models.category import Category, CategoryCreate, CategoryRead
 
@@ -21,16 +22,12 @@ def list_categories(
         query = query.where(Category.source_id == source_id)
     if parent_id is not None:
         query = query.where(Category.parent_id == parent_id)
-    query = query.offset(offset).limit(limit)
-    return session.exec(query).all()
+    return session.exec(query.offset(offset).limit(limit)).all()
 
 
 @router.get("/{category_id}", response_model=CategoryRead)
 def get_category(category_id: int, session: Session = Depends(get_session)):
-    category = session.get(Category, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return category
+    return get_or_404(session, Category, category_id)
 
 
 @router.post("/", response_model=CategoryRead, status_code=201)
@@ -46,8 +43,4 @@ def create_category(
 
 @router.delete("/{category_id}", status_code=204)
 def delete_category(category_id: int, session: Session = Depends(get_session)):
-    category = session.get(Category, category_id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    session.delete(category)
-    session.commit()
+    delete_obj(session, get_or_404(session, Category, category_id))

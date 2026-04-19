@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
+from app.core.crud import apply_patch, delete_obj, get_or_404
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
@@ -76,10 +77,7 @@ def list_items(
 
 @router.get("/{item_id}", response_model=ItemRead)
 def get_item(item_id: int, session: Session = Depends(get_session)):
-    item = session.get(Item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
+    return get_or_404(session, Item, item_id)
 
 
 @router.post("/", response_model=ItemRead, status_code=201)
@@ -90,6 +88,7 @@ def create_item(
     item = Item.model_validate(payload.item)
     session.add(item)
     session.flush()
+    assert item.id is not None
 
     for category_in in payload.categories:
         # Upsert: Check if category is already created
@@ -120,24 +119,12 @@ def update_item(
     item_in: ItemUpdate,
     session: Session = Depends(get_session),
 ):
-    item = session.get(Item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    data = item_in.model_dump(exclude_unset=True)
-    item.sqlmodel_update(data)
-    session.add(item)
-    session.commit()
-    session.refresh(item)
-    return item
+    return apply_patch(session, get_or_404(session, Item, item_id), item_in)
 
 
 @router.delete("/{item_id}", status_code=204)
 def delete_item(item_id: int, session: Session = Depends(get_session)):
-    item = session.get(Item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    session.delete(item)
-    session.commit()
+    delete_obj(session, get_or_404(session, Item, item_id))
 
 
 # --- ItemMedia routes ---
@@ -145,9 +132,7 @@ def delete_item(item_id: int, session: Session = Depends(get_session)):
 
 @router.get("/{item_id}/media", response_model=list[ItemMediaRead])
 def list_item_media(item_id: int, session: Session = Depends(get_session)):
-    item = session.get(Item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+    _ = get_or_404(session, Item, item_id)
     return session.exec(select(ItemMedia).where(ItemMedia.item_id == item_id)).all()
 
 
@@ -157,9 +142,7 @@ def add_item_media(
     media_in: ItemMediaCreate,
     session: Session = Depends(get_session),
 ):
-    item = session.get(Item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+    _ = get_or_404(session, Item, item_id)
     media = ItemMedia.model_validate(media_in.model_dump() | {"item_id": item_id})
     session.add(media)
     session.commit()

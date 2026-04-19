@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, and_, col, or_, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
+from app.core.crud import apply_patch, delete_obj, get_or_404
 from app.core.tags import normalize_tags
 from app.database import get_session
 from app.models.collection import (
@@ -28,10 +29,7 @@ def list_collections(
 
 @router.get("/{collection_id}", response_model=CollectionRead)
 def get_collection(collection_id: int, session: Session = Depends(get_session)):
-    collection = session.get(Collection, collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-    return collection
+    return get_or_404(session, Collection, collection_id)
 
 
 @router.post("/", response_model=CollectionRead, status_code=201)
@@ -52,24 +50,16 @@ def update_collection(
     collection_in: CollectionUpdate,
     session: Session = Depends(get_session),
 ):
-    collection = session.get(Collection, collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-    data = collection_in.model_dump(exclude_unset=True)
-    collection.sqlmodel_update(data)
-    session.add(collection)
-    session.commit()
-    session.refresh(collection)
-    return collection
+    return apply_patch(
+        session,
+        get_or_404(session, Collection, collection_id),
+        collection_in,
+    )
 
 
 @router.delete("/{collection_id}", status_code=204)
 def delete_collection(collection_id: int, session: Session = Depends(get_session)):
-    collection = session.get(Collection, collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-    session.delete(collection)
-    session.commit()
+    delete_obj(session, get_or_404(session, Collection, collection_id))
 
 
 @router.get("/{collection_id}/items", response_model=list[ItemRead])
@@ -79,10 +69,7 @@ def get_collection_items(
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    collection = session.get(Collection, collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-
+    collection = get_or_404(session, Collection, collection_id)
     filters = _build_filters(collection)
     if not filters:
         return []
