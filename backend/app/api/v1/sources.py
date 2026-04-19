@@ -1,7 +1,10 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from app.core.crypto import encrypt_credentials
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
 from app.models.source import Source, SourceCreate, SourceRead, SourceUpdate
@@ -64,6 +67,24 @@ def delete_source(source_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Source not found")
     session.delete(source)
     session.commit()
+
+
+@router.put("/{source_id}/credentials", response_model=SourceRead)
+def update_credentials(
+    source_id: int,
+    credentials: dict,
+    session: Session = Depends(get_session),
+):
+    """Encrypt and store credentials for a source."""
+    source = session.get(Source, source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+    source.credentials = encrypt_credentials(credentials)
+    source.updated_at = datetime.now(UTC)
+    session.add(source)
+    session.commit()
+    session.refresh(source)
+    return source
 
 
 # --- Bootstrap routes ---
