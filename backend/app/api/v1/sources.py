@@ -146,3 +146,15 @@ def bootstrap_all_sources(session: Session = Depends(get_session)):
         source, was_created = _bootstrap_one(slug, session)
         (created if was_created else existing).append(source)
     return BootstrapAllResult(created=created, existing=existing)
+
+
+@router.get("/bootstrap/{slug}/credentials-schema")
+def get_credentials_schema(slug: str) -> dict:
+    """Return the expected credentials schema for a registered scraper."""
+    reg = get_registration(slug)
+    if reg is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No scraper registered for slug '{slug}'.",
+        )
+    return reg.credentials_schema
