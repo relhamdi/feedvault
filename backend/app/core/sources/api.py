@@ -1,3 +1,5 @@
+from typing import Any
+
 import httpx
 
 from app.core.sources.base import BaseSource
@@ -12,7 +14,12 @@ class APISource(BaseSource):
     def build_url(self, endpoint: str) -> str:
         return f"{self.source.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
-    def get(self, endpoint: str, params: dict | None = None) -> dict | list:
+    def get(
+        self,
+        endpoint: str,
+        params: dict | None = None,
+    ) -> tuple[Any, httpx.Headers]:
+        """Perform a GET request. Returns (data, headers)."""
         url = self.build_url(endpoint)
         merged_params = {**self.default_params, **(params or {})}
         with httpx.Client() as client:
@@ -22,4 +29,4 @@ class APISource(BaseSource):
                 params=merged_params,
             )
             response.raise_for_status()
-            return response.json()
+            return response.json(), response.headers
