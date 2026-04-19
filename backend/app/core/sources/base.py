@@ -4,14 +4,22 @@ from datetime import datetime
 from sqlmodel import Session
 
 from app.core.sources.models import NormalizedItem, RawItem, ScrapeJob, ScrapeMode
+from app.models.source import Source
 
 
 class BaseSource(ABC):
     """Abstract class common to all sources."""
 
-    def __init__(self, feed_id: int, session: Session, params: dict | None = None):
+    def __init__(
+        self,
+        feed_id: int,
+        session: Session,
+        source: Source,
+        params: dict | None = None,
+    ):
         self.feed_id = feed_id
         self.session = session
+        self.source = source
         self.params = params or {}
 
     @abstractmethod

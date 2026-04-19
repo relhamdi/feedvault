@@ -57,6 +57,7 @@ def _get_scraper(source: Source, feed: Feed, session: Session) -> BaseSource:
     return cls(
         feed_id=feed.id,
         session=session,
+        source=source,
         params=feed.params or {},
     )
 
