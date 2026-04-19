@@ -1,3 +1,4 @@
+import importlib
 from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,13 +12,16 @@ from app.core.sources.models import (
     ScrapeResult,
     ScrapeTargetType,
 )
+from app.core.sources.registry import get_scraper_class, registered_slugs
 from app.core.upsert import upsert_item
 from app.database import get_session
 from app.models.feed import Feed
-from app.models.source import Source, SourceType
-from app.sources.gamebanana import GameBananaSource
+from app.models.source import Source
 
 router = APIRouter()
+
+# Import and register all scrapers
+importlib.import_module("app.sources")
 
 
 class ScrapeRequest(BaseModel):
@@ -39,16 +43,21 @@ def _get_scraper(source: Source, feed: Feed, session: Session) -> BaseSource:
     """Instantiate the correct scraper based on source slug."""
     assert feed.id is not None
 
-    if source.source_type == SourceType.API and source.slug == "gamebanana":
-        return GameBananaSource(
-            feed_id=feed.id,
-            session=session,
-            params=feed.params or {},
+    cls = get_scraper_class(source.slug)
+
+    if cls is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"No scraper registered for source '{source.slug}'. "
+                f"Available sources: {registered_slugs() or 'None'}"
+            ),
         )
 
-    raise HTTPException(
-        status_code=400,
-        detail=f"No scraper implemented for source '{source.slug}'",
+    return cls(
+        feed_id=feed.id,
+        session=session,
+        params=feed.params or {},
     )
 
 
