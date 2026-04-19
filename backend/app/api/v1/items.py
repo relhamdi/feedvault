@@ -11,14 +11,6 @@ from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
 from app.models.item_media import ItemMedia, ItemMediaCreate, ItemMediaRead
 from app.models.links import ItemCategoryLink
 
-router = APIRouter()
-
-
-class ItemCreateWithRelations(BaseModel):
-    item: ItemCreate
-    categories: list[CategoryCreate] = []
-    media: list[ItemMediaCreate] = []
-
 
 class ItemSortField(str, Enum):
     SOURCE_PUBLISHED_AT = "source_published_at"
@@ -30,6 +22,22 @@ class ItemSortField(str, Enum):
 class SortOrder(str, Enum):
     ASC = "asc"
     DESC = "desc"
+
+
+class ItemCreateWithRelations(BaseModel):
+    item: ItemCreate
+    categories: list[CategoryCreate] = []
+    media: list[ItemMediaCreate] = []
+
+
+router = APIRouter()
+
+SORT_COLUMNS = {
+    ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
+    ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
+    ItemSortField.SCRAPED_AT: Item.scraped_at,
+    ItemSortField.LAST_SCRAPED_AT: Item.last_scraped_at,
+}
 
 
 @router.get("/", response_model=list[ItemRead])
@@ -45,19 +53,6 @@ def list_items(
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    sort_column = {
-        ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
-        ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
-        ItemSortField.SCRAPED_AT: Item.scraped_at,
-        ItemSortField.LAST_SCRAPED_AT: Item.last_scraped_at,
-    }[sort_by]
-
-    order = (
-        col(sort_column).desc()
-        if sort_order == SortOrder.DESC
-        else col(sort_column).asc()
-    )
-
     query = select(Item)
     if feed_id is not None:
         query = query.where(Item.feed_id == feed_id)
@@ -70,6 +65,11 @@ def list_items(
     if is_public is not None:
         query = query.where(Item.is_public == is_public)
 
+    order = (
+        col(SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(SORT_COLUMNS[sort_by]).asc()
+    )
     query = query.order_by(order).offset(offset).limit(limit)
     return session.exec(query).all()
 
@@ -89,7 +89,7 @@ def create_item(
 ):
     item = Item.model_validate(payload.item)
     session.add(item)
-    session.flush()  # Generate ID without commit
+    session.flush()
 
     for category_in in payload.categories:
         # Upsert: Check if category is already created
