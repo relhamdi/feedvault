@@ -13,12 +13,18 @@ class ScraperRegistration:
     cls: ScraperClass
     # Optional metadata for POST /sources/bootstrap — unused if empty
     default_source: dict = field(default_factory=dict)
+    credentials_schema: dict = field(default_factory=dict)
 
 
 _REGISTRY: dict[str, ScraperRegistration] = {}
 
 
-def register_scraper(slug: str, *, default_source: dict | None = None) -> Callable:
+def register_scraper(
+    slug: str,
+    *,
+    default_source: dict | None = None,
+    credentials_schema: dict | None = None,
+) -> Callable:
     """Decorator — registers a scraper based on a slug.
 
     Ex:
@@ -36,6 +42,7 @@ def register_scraper(slug: str, *, default_source: dict | None = None) -> Callab
             slug=slug,
             cls=cls,
             default_source=default_source or {},
+            credentials_schema=credentials_schema or {},
         )
         return cls
 
