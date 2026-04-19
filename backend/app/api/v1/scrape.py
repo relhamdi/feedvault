@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlmodel import Session
+from sqlmodel import Session, func, select
 
 from app.core.crud import get_or_404
 from app.core.sources.base import BaseSource
@@ -63,6 +63,21 @@ def _get_scraper(source: Source, feed: Feed, session: Session) -> BaseSource:
     )
 
 
+def _update_source_last_scraped(session: Session, source_id: int) -> None:
+    """Set source.last_scraped_at to the oldest feed.last_scraped_at among active feeds."""
+    result = session.exec(
+        select(func.min(Feed.last_scraped_at))
+        .where(Feed.source_id == source_id)
+        .where(Feed.is_active)
+    ).first()
+
+    source = session.get(Source, source_id)
+    if source and result:
+        source.last_scraped_at = _make_aware(result)
+        session.add(source)
+        session.commit()
+
+
 @router.post("/", response_model=ScrapeResult)
 def scrape(payload: ScrapeRequest, session: Session = Depends(get_session)):
     feed = get_or_404(session, Feed, payload.feed_id)
@@ -103,5 +118,7 @@ def scrape(payload: ScrapeRequest, session: Session = Depends(get_session)):
     feed.last_scraped_at = datetime.now(UTC)
     session.add(feed)
     session.commit()
+
+    _update_source_last_scraped(session, feed.source_id)
 
     return ScrapeResult(feed_id=feed.id, upserted=len(item_ids), item_ids=item_ids)
