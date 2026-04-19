@@ -5,9 +5,7 @@ import httpx
 from PIL import Image
 
 from app.config import settings
-
-MAX_SIZE = (150, 200)
-QUALITY = 75
+from app.core.constants import THUMBNAIL_MAX_SIZE, THUMBNAIL_QUALITY
 
 
 def download_and_compress(url: str, dest: Path) -> bool:
@@ -26,10 +24,10 @@ def download_and_compress(url: str, dest: Path) -> bool:
             response.raise_for_status()
 
         image = Image.open(BytesIO(response.content))
-        image.thumbnail(MAX_SIZE, Image.Resampling.LANCZOS)
+        image.thumbnail(THUMBNAIL_MAX_SIZE, Image.Resampling.LANCZOS)
 
         dest.parent.mkdir(parents=True, exist_ok=True)
-        image.save(dest, format="WEBP", quality=QUALITY)
+        image.save(dest, format="WEBP", quality=THUMBNAIL_QUALITY)
         return True
 
     except Exception:
@@ -46,7 +44,7 @@ def get_thumbnail_path(
     Args:
         source_slug (str): Source slug.
         external_id (str): Item ID.
-        sub_path (str | None, optional): Optional sub path for the thumbnail. 
+        sub_path (str | None, optional): Optional sub path for the thumbnail.
             Defaults to None.
 
     Returns:

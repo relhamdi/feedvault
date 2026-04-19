@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crypto import encrypt_credentials
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
@@ -19,8 +20,8 @@ class BootstrapAllResult(BaseModel):
 
 @router.get("/", response_model=list[SourceRead])
 def list_sources(
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0),
+    limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
+    offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
     return session.exec(select(Source).offset(offset).limit(limit)).all()

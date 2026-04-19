@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
+from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.database import get_session
 from app.models.category import Category, CategoryCreate, CategoryRead
 
@@ -11,8 +12,8 @@ router = APIRouter()
 def list_categories(
     source_id: int | None = Query(default=None),
     parent_id: int | None = Query(default=None),
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0),
+    limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
+    offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
     query = select(Category)

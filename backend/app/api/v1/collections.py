@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, and_, col, or_, select
 
+from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.tags import normalize_tags
 from app.database import get_session
 from app.models.collection import (
@@ -18,8 +19,8 @@ router = APIRouter()
 
 @router.get("/", response_model=list[CollectionRead])
 def list_collections(
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0),
+    limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
+    offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
     return session.exec(select(Collection).offset(offset).limit(limit)).all()
@@ -74,8 +75,8 @@ def delete_collection(collection_id: int, session: Session = Depends(get_session
 @router.get("/{collection_id}/items", response_model=list[ItemRead])
 def get_collection_items(
     collection_id: int,
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0),
+    limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
+    offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
     collection = session.get(Collection, collection_id)

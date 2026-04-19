@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, col, select
 
+from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
@@ -40,8 +41,8 @@ def list_items(
     is_public: bool | None = Query(default=None),
     sort_by: ItemSortField = Query(default=ItemSortField.SOURCE_UPDATED_AT),
     sort_order: SortOrder = Query(default=SortOrder.DESC),
-    limit: int = Query(default=50, le=200),
-    offset: int = Query(default=0),
+    limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
+    offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
     sort_column = {
