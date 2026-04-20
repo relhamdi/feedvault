@@ -1,11 +1,14 @@
 <script>
     import { itemsApi } from '../../api/items.js';
     import { selectedFeedId } from '../../stores/navigation.js';
+    import ItemModal from '../item/ItemModal.svelte';
     import ItemCard from './ItemCard.svelte';
 
     let items = [];
     let loading = true;
     let error = null;
+
+    let selectedItem = null;
 
     // Reload items whenever selected feed changes
     $: if ($selectedFeedId) loadItems($selectedFeedId);
@@ -22,6 +25,19 @@
             loading = false;
         }
     }
+
+    function openItem(item) {
+        selectedItem = item;
+    }
+
+    function closeModal() {
+        selectedItem = null;
+    }
+
+    function handleItemUpdate(updatedItem) {
+        items = items.map((i) => (i.id === updatedItem.id ? updatedItem : i));
+        selectedItem = updatedItem;
+    }
 </script>
 
 {#if $selectedFeedId}
@@ -35,9 +51,12 @@
         {:else}
             <div class="item-grid">
                 {#each items as item (item.id)}
-                    <ItemCard {item} />
+                    <ItemCard {item} on:click={() => openItem(item)} />
                 {/each}
             </div>
+        {/if}
+        {#if selectedItem}
+            <ItemModal item={selectedItem} onClose={closeModal} onUpdate={handleItemUpdate} />
         {/if}
     </div>
 {/if}
