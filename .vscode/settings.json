@@ -9,5 +9,8 @@
     "[svelte]": {
         "editor.defaultFormatter": "svelte.svelte-vscode"
     },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
     "python.analysis.extraPaths": ["backend"]
 }
