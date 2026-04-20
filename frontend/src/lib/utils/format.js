@@ -9,3 +9,27 @@ export function formatDate(dateStr) {
         day: 'numeric',
     });
 }
+
+/**
+ * Parse basic BBCode tags to HTML.
+ * Supported: [b], [i], [u], [s], [color=x], [size=x], [url=x], [url]
+ */
+export function parseBBCode(str) {
+    if (!str) return '';
+    return str
+        .replace(/\[b\](.*?)\[\/b\]/gis, '<strong>$1</strong>')
+        .replace(/\[i\](.*?)\[\/i\]/gis, '<em>$1</em>')
+        .replace(/\[u\](.*?)\[\/u\]/gis, '<u>$1</u>')
+        .replace(/\[s\](.*?)\[\/s\]/gis, '<s>$1</s>')
+        .replace(/\[color=(.*?)\](.*?)\[\/color\]/gis, '<span style="color:$1">$2</span>')
+        .replace(/\[size=(\d+)\](.*?)\[\/size\]/gis, '<span style="font-size:$1px">$2</span>')
+        .replace(
+            /\[url=(.*?)\](.*?)\[\/url\]/gis,
+            '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
+        )
+        .replace(
+            /\[url\](.*?)\[\/url\]/gis,
+            '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+        )
+        .replace(/\n/g, '<br>');
+}
