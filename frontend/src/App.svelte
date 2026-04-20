@@ -1,5 +1,6 @@
 <script>
     import { onMount } from "svelte";
+    import Sidebar from "./lib/components/sidebar/Sidebar.svelte";
     import { theme } from "./lib/stores/theme.js";
 
     onMount(() => {
@@ -9,8 +10,7 @@
 
 <div class="app-layout">
     <aside class="sidebar-slot">
-        <!-- Sidebar here -->
-        <p style="color: var(--text-secondary); padding: 1rem;">Sidebar</p>
+        <Sidebar />
     </aside>
 
     <main class="main-slot">
