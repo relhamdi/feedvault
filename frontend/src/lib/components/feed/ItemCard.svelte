@@ -1,17 +1,7 @@
 <script>
     import { MEDIA_BASE_URL } from '../../api/items.js';
-
+    import { formatDate } from '../../utils/format.js';
     export let item;
-
-    // Format a datetime string to a readable short date
-    function formatDate(dateStr) {
-        if (!dateStr) return '';
-        return new Date(dateStr).toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
-    }
 
     $: thumbnailSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
 </script>
