@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import Sidebar from "./lib/components/sidebar/Sidebar.svelte";
     import { theme } from "./lib/stores/theme.js";
+    import FeedTabs from "./lib/components/feed/FeedTabs.svelte";
 
     onMount(() => {
         document.documentElement.setAttribute("data-theme", $theme);
@@ -14,8 +15,10 @@
     </aside>
 
     <main class="main-slot">
-        <!-- Main content here -->
-        <p style="color: var(--text-secondary); padding: 1rem;">Contenu</p>
+        <FeedTabs />
+        <div class="content-slot">
+            <p style="color: var(--text-secondary); padding: 1rem;">Items</p>
+        </div>
     </main>
 </div>
 
@@ -39,5 +42,10 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+    }
+
+    .content-slot {
+        flex: 1;
+        overflow-y: auto;
     }
 </style>
