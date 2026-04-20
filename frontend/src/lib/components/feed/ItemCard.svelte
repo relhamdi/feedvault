@@ -141,7 +141,8 @@
         border-radius: 4px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-    }
+        text-align: center;
+}
 
     .badge.nsfw {
         background: var(--danger);
