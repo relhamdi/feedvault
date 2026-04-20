@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import FeedTabs from './lib/components/feed/FeedTabs.svelte';
+    import ItemGrid from './lib/components/feed/ItemGrid.svelte';
     import Sidebar from './lib/components/sidebar/Sidebar.svelte';
     import { theme } from './lib/stores/theme.js';
 
@@ -17,7 +18,7 @@
     <main class="main-slot">
         <FeedTabs />
         <div class="content-slot">
-            <p style="color: var(--text-secondary); padding: 1rem;">Items</p>
+            <ItemGrid />
         </div>
     </main>
 </div>
