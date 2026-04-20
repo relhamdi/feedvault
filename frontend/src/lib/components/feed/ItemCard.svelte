@@ -54,7 +54,7 @@
                 {#if item.author}
                     <span class="card-author">{item.author.name}</span>
                 {/if}
-                <span class="card-date">{formatDate(item.source_published_at)}</span>
+                <span class="card-date">{formatDate(item.source_updated_at)}</span>
             </div>
 
             {#if item.tags?.length > 0}
