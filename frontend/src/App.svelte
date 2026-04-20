@@ -1,11 +1,11 @@
 <script>
-    import { onMount } from "svelte";
-    import Sidebar from "./lib/components/sidebar/Sidebar.svelte";
-    import { theme } from "./lib/stores/theme.js";
-    import FeedTabs from "./lib/components/feed/FeedTabs.svelte";
+    import { onMount } from 'svelte';
+    import FeedTabs from './lib/components/feed/FeedTabs.svelte';
+    import Sidebar from './lib/components/sidebar/Sidebar.svelte';
+    import { theme } from './lib/stores/theme.js';
 
     onMount(() => {
-        document.documentElement.setAttribute("data-theme", $theme);
+        document.documentElement.setAttribute('data-theme', $theme);
     });
 </script>
 
