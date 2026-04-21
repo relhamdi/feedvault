@@ -33,12 +33,6 @@ class ScrapeJob(BaseModel):
     status: ScrapeJobStatus = ScrapeJobStatus.PENDING
 
 
-class ScrapeResult(BaseModel):
-    feed_id: int
-    upserted: int
-    item_ids: list[int]
-
-
 class RawAuthor(BaseModel):
     external_id: str
     name: str
