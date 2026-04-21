@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import JSON
 from sqlmodel import Column, Field, Relationship, SQLModel
 
+from app.models.author import AuthorRead
 from app.models.base import TimestampModel
+from app.models.category import CategoryRead
+from app.models.item_media import ItemMediaRead
 from app.models.links import ItemCategoryLink
 
 if TYPE_CHECKING:
@@ -16,7 +19,6 @@ if TYPE_CHECKING:
 
 class ItemBase(SQLModel):
     feed_id: int = Field(foreign_key="feed.id")
-    author_id: int | None = Field(default=None, foreign_key="author.id")
     external_id: str = Field(index=True)
     title: str
     url: str
@@ -40,6 +42,7 @@ class ItemBase(SQLModel):
 
 class Item(ItemBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    author_id: int | None = Field(default=None, foreign_key="author.id")
 
     feed: "Feed" = Relationship(back_populates="items")
     author: "Author" = Relationship(back_populates="items")
@@ -51,6 +54,7 @@ class Item(ItemBase, TimestampModel, table=True):
 
 
 class ItemCreate(ItemBase):
+    author_id: int | None = Field(default=None, foreign_key="author.id")
     pass
 
 
@@ -65,3 +69,6 @@ class ItemUpdate(SQLModel):
 
 class ItemRead(ItemBase, TimestampModel):
     id: int
+    author: AuthorRead | None = None
+    media: list[ItemMediaRead] = []
+    categories: list[CategoryRead] = []
