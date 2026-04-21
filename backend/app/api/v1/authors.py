@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import delete_obj, get_or_404
+from app.core.crud import delete_obj, get_or_404, paginate
 from app.database import get_session
 from app.models.author import Author, AuthorCreate, AuthorRead
+from app.models.pagination import PaginatedResponse
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[AuthorRead])
+@router.get("/", response_model=PaginatedResponse[AuthorRead])
 def list_authors(
     source_id: int | None = Query(default=None),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
@@ -19,7 +20,7 @@ def list_authors(
     query = select(Author)
     if source_id is not None:
         query = query.where(Author.source_id == source_id)
-    return session.exec(query.offset(offset).limit(limit)).all()
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{author_id}", response_model=AuthorRead)

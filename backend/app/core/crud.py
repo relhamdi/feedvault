@@ -1,5 +1,15 @@
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, SQLModel, select
+
+from app.models.pagination import PaginatedResponse
+
+
+def paginate(session: Session, query, limit: int, offset: int) -> PaginatedResponse:
+    count_query = select(func.count()).select_from(query.subquery())
+    total = session.exec(count_query).one()
+    items = session.exec(query.offset(offset).limit(limit)).all()
+    return PaginatedResponse(items=items, total=total, limit=limit, offset=offset)
 
 
 def get_or_404(session: Session, model: type, id: int):

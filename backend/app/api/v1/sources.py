@@ -4,12 +4,13 @@ from sqlalchemy import case, func
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404
+from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.crypto import encrypt_credentials
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
 from app.models.feed import Feed
 from app.models.item import Item
+from app.models.pagination import PaginatedResponse
 from app.models.source import Source, SourceCreate, SourceRead, SourceUpdate
 from app.models.stats import SourceStats
 
@@ -21,13 +22,14 @@ class BootstrapAllResult(BaseModel):
     existing: list[SourceRead]
 
 
-@router.get("/", response_model=list[SourceRead])
+@router.get("/", response_model=PaginatedResponse[SourceRead])
 def list_sources(
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    return session.exec(select(Source).offset(offset).limit(limit)).all()
+    query = select(Source)
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{source_id}", response_model=SourceRead)

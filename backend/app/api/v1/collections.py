@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, and_, col, or_, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404
+from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.tags import normalize_tags
 from app.database import get_session
 from app.models.collection import (
@@ -14,17 +14,19 @@ from app.models.collection import (
 )
 from app.models.feed import Feed
 from app.models.item import Item, ItemRead
+from app.models.pagination import PaginatedResponse
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CollectionRead])
+@router.get("/", response_model=PaginatedResponse[CollectionRead])
 def list_collections(
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    return session.exec(select(Collection).offset(offset).limit(limit)).all()
+    query = select(Collection)
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{collection_id}", response_model=CollectionRead)

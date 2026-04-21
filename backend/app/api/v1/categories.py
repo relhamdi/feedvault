@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import delete_obj, get_or_404
+from app.core.crud import delete_obj, get_or_404, paginate
 from app.database import get_session
 from app.models.category import Category, CategoryCreate, CategoryRead
+from app.models.pagination import PaginatedResponse
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CategoryRead])
+@router.get("/", response_model=PaginatedResponse[CategoryRead])
 def list_categories(
     source_id: int | None = Query(default=None),
     parent_id: int | None = Query(default=None),
@@ -22,7 +23,7 @@ def list_categories(
         query = query.where(Category.source_id == source_id)
     if parent_id is not None:
         query = query.where(Category.parent_id == parent_id)
-    return session.exec(query.offset(offset).limit(limit)).all()
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{category_id}", response_model=CategoryRead)

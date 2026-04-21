@@ -3,16 +3,17 @@ from sqlalchemy import case, func
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404
+from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.database import get_session
 from app.models.feed import Feed, FeedCreate, FeedRead, FeedUpdate
 from app.models.item import Item
+from app.models.pagination import PaginatedResponse
 from app.models.stats import FeedStats
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[FeedRead])
+@router.get("/", response_model=PaginatedResponse[FeedRead])
 def list_feeds(
     source_id: int | None = Query(default=None),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
@@ -22,7 +23,7 @@ def list_feeds(
     query = select(Feed)
     if source_id is not None:
         query = query.where(Feed.source_id == source_id)
-    return session.exec(query.offset(offset).limit(limit)).all()
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{feed_id}", response_model=FeedRead)
