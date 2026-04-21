@@ -25,6 +25,7 @@ class ItemBase(SQLModel):
     description: str | None = None
     summary: str | None = None
     thumbnail_path: str | None = None
+    thumbnail_url: str | None = None
     tags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     stats: dict = Field(default_factory=dict, sa_column=Column(JSON))
     raw_extra: dict = Field(default_factory=dict, sa_column=Column(JSON))
