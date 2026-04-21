@@ -10,7 +10,7 @@
 
     onMount(async () => {
         try {
-            sources = await sourcesApi.list();
+            sources = (await sourcesApi.list()).items;
         } catch (e) {
             error = e.message;
         } finally {

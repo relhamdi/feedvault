@@ -15,7 +15,7 @@
         error = null;
         feeds = [];
         try {
-            feeds = await feedsApi.list(sourceId);
+            feeds = (await feedsApi.list(sourceId)).items;
             // Auto-select first feed if none selected
             if (feeds.length > 0 && !$selectedFeedId) {
                 selectedFeedId.set(feeds[0].id);
