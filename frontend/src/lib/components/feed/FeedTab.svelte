@@ -1,10 +1,15 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, onMount } from 'svelte';
+    import { feedStats, refreshFeedStats } from '../../stores/stats.js';
 
     export let feed;
     export let active = false;
 
     const dispatch = createEventDispatcher();
+
+    onMount(() => refreshFeedStats(feed.id));
+
+    $: stats = $feedStats[feed.id] ?? null;
 </script>
 
 <button class="feed-tab" class:active on:click={() => dispatch('select')} title={feed.name}>
@@ -14,8 +19,13 @@
 
     <span class="feed-name">{feed.name}</span>
 
-    <!-- Unread badge — wired later -->
-    <span class="unread-badge">0</span>
+    {#if stats !== null}
+        <span class="unread-badge" class:zero={stats.unread === 0}>
+            {stats.unread}
+        </span>
+    {:else}
+        <span class="unread-badge zero">–</span>
+    {/if}
 </button>
 
 <style>
@@ -68,5 +78,11 @@
         border-radius: 99px;
         min-width: 16px;
         text-align: center;
+        transition: background var(--transition);
+    }
+
+    .unread-badge.zero {
+        background: var(--bg-tertiary);
+        color: var(--text-muted);
     }
 </style>

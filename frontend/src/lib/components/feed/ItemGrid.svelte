@@ -1,6 +1,7 @@
 <script>
     import { itemsApi } from '../../api/items.js';
-    import { selectedFeedId } from '../../stores/navigation.js';
+    import { selectedFeedId, selectedSourceId } from '../../stores/navigation.js';
+    import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import ItemModal from '../item/ItemModal.svelte';
     import ItemCard from './ItemCard.svelte';
 
@@ -61,6 +62,8 @@
     function handleItemUpdate(updatedItem) {
         items = items.map((i) => (i.id === updatedItem.id ? updatedItem : i));
         selectedItem = updatedItem;
+        refreshFeedStats($selectedFeedId);
+        refreshSourceStats($selectedSourceId);
     }
 </script>
 
