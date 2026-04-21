@@ -1,9 +1,19 @@
 from fastapi import HTTPException
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 
 def get_or_404(session: Session, model: type, id: int):
     obj = session.get(model, id)
+    if not obj:
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+    return obj
+
+
+def get_or_404_with_options(session: Session, model: type, id: int, *options):
+    query = select(model).where(model.id == id)
+    for opt in options:
+        query = query.options(opt)
+    obj = session.exec(query).first()
     if not obj:
         raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
     return obj
