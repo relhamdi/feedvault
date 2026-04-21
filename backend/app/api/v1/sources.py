@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
+from sqlalchemy import case, func
 from sqlmodel import Session, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404
+from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.crypto import encrypt_credentials
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
+from app.models.feed import Feed
+from app.models.item import Item
+from app.models.pagination import PaginatedResponse
 from app.models.source import Source, SourceCreate, SourceRead, SourceUpdate
+from app.models.stats import SourceStats
 
 router = APIRouter()
 
@@ -17,13 +22,14 @@ class BootstrapAllResult(BaseModel):
     existing: list[SourceRead]
 
 
-@router.get("/", response_model=list[SourceRead])
+@router.get("/", response_model=PaginatedResponse[SourceRead])
 def list_sources(
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    return session.exec(select(Source).offset(offset).limit(limit)).all()
+    query = select(Source)
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{source_id}", response_model=SourceRead)
@@ -52,6 +58,40 @@ def update_source(
 @router.delete("/{source_id}", status_code=204)
 def delete_source(source_id: int, session: Session = Depends(get_session)):
     delete_obj(session, get_or_404(session, Source, source_id))
+
+
+@router.get("/{source_id}/stats", response_model=SourceStats)
+def get_source_stats(source_id: int, session: Session = Depends(get_session)):
+    _ = get_or_404(session, Source, source_id)
+
+    item_row = session.exec(
+        select(
+            func.count(Item.id).label("total"),  # type: ignore
+            func.sum(case((~Item.is_read, 1), else_=0)).label("unread"),  # type: ignore
+            func.sum(case((Item.is_favorite, 1), else_=0)).label("favorite"),  # type: ignore
+            func.sum(case((Item.is_nsfw, 1), else_=0)).label("nsfw"),  # type: ignore
+            func.sum(case((~Item.is_public, 1), else_=0)).label("not_public"),  # type: ignore
+        )  # type: ignore
+        .join(Feed, Item.feed_id == Feed.id)
+        .where(Feed.source_id == source_id)
+    ).one()
+
+    feeds_count, active_feeds_count = session.exec(
+        select(
+            func.count(Feed.id).label("feeds_count"),  # type: ignore
+            func.sum(case((Feed.is_active, 1), else_=0)).label("active_feeds_count"),  # type: ignore
+        ).where(Feed.source_id == source_id)
+    ).one()
+
+    return SourceStats(
+        total=item_row.total or 0,
+        unread=item_row.unread or 0,
+        favorite=item_row.favorite or 0,
+        nsfw=item_row.nsfw or 0,
+        not_public=item_row.not_public or 0,
+        feeds_count=feeds_count or 0,
+        active_feeds_count=active_feeds_count or 0,
+    )
 
 
 @router.put("/{source_id}/credentials", response_model=SourceRead)

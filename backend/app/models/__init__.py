@@ -10,6 +10,8 @@ from app.models.feed import Feed, FeedCreate, FeedRead, FeedUpdate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
 from app.models.item_media import ItemMedia, ItemMediaCreate, ItemMediaRead
 from app.models.links import ItemCategoryLink
+from app.models.scrape_job import ScrapeJobRecord
+from app.models.scrape_log import ScrapeLog
 from app.models.source import Source, SourceCreate, SourceRead, SourceUpdate
 
 __all__ = [
@@ -39,4 +41,6 @@ __all__ = [
     "CollectionCreate",
     "CollectionUpdate",
     "CollectionRead",
+    "ScrapeJobRecord",
+    "ScrapeLog",
 ]

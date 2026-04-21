@@ -2,15 +2,23 @@ from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404
+from app.core.crud import (
+    apply_patch,
+    delete_obj,
+    get_or_404,
+    get_or_404_with_options,
+    paginate,
+)
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
 from app.models.item_media import ItemMedia, ItemMediaCreate, ItemMediaRead
 from app.models.links import ItemCategoryLink
+from app.models.pagination import PaginatedResponse
 
 
 class ItemSortField(str, Enum):
@@ -41,7 +49,7 @@ SORT_COLUMNS = {
 }
 
 
-@router.get("/", response_model=list[ItemRead])
+@router.get("/", response_model=PaginatedResponse[ItemRead])
 def list_items(
     feed_id: int | None = Query(default=None),
     is_read: bool | None = Query(default=None),
@@ -54,7 +62,11 @@ def list_items(
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    query = select(Item)
+    query = select(Item).options(
+        selectinload(Item.author),  # type: ignore
+        selectinload(Item.media),  # type: ignore
+        selectinload(Item.categories),  # type: ignore
+    )
     if feed_id is not None:
         query = query.where(Item.feed_id == feed_id)
     if is_read is not None:
@@ -71,13 +83,20 @@ def list_items(
         if sort_order == SortOrder.DESC
         else col(SORT_COLUMNS[sort_by]).asc()
     )
-    query = query.order_by(order).offset(offset).limit(limit)
-    return session.exec(query).all()
+    query = query.order_by(order)
+    return paginate(session, query, limit, offset)
 
 
 @router.get("/{item_id}", response_model=ItemRead)
 def get_item(item_id: int, session: Session = Depends(get_session)):
-    return get_or_404(session, Item, item_id)
+    return get_or_404_with_options(
+        session,
+        Item,
+        item_id,
+        selectinload(Item.author),  # type: ignore
+        selectinload(Item.media),  # type: ignore
+        selectinload(Item.categories),  # type: ignore
+    )
 
 
 @router.post("/", response_model=ItemRead, status_code=201)
