@@ -1,6 +1,10 @@
 <script>
     import { itemsApi } from '../../api/items.js';
-    import { selectedFeedId, selectedSourceId } from '../../stores/navigation.js';
+    import {
+        feedRefreshTrigger,
+        selectedFeedId,
+        selectedSourceId,
+    } from '../../stores/navigation.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import ItemModal from '../item/ItemModal.svelte';
     import ItemCard from './ItemCard.svelte';
@@ -16,7 +20,7 @@
     let selectedItem = null;
 
     // Reload items whenever selected feed changes
-    $: if ($selectedFeedId) resetAndLoad($selectedFeedId);
+    $: if ($selectedFeedId || $feedRefreshTrigger) resetAndLoad($selectedFeedId);
 
     async function resetAndLoad(feedId) {
         offset = 0;
