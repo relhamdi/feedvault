@@ -30,6 +30,47 @@ a {
     text-decoration: none;
 }
 
+input[type="text"],
+input[type="url"],
+input[type="color"],
+textarea,
+select {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    transition: border-color var(--transition);
+    outline: none;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--accent);
+}
+
+input[type="color"] {
+    padding: 0.2rem;
+    height: 36px;
+    cursor: pointer;
+}
+
+input:disabled,
+select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
