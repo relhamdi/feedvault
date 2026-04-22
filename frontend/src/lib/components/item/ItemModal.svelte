@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
-    import { itemsApi, MEDIA_BASE_URL } from '../../api/items.js';
+    import { itemsApi } from '../../api/items.js';
+    import { MEDIA_URL } from '../../config.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
 
     export let item;
@@ -8,7 +9,7 @@
     export let onUpdate;
 
     $: remoteSrc = item.thumbnail_url ?? null;
-    $: localSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
+    $: localSrc = item.thumbnail_path ? `${MEDIA_URL}/${item.thumbnail_path}` : null;
     $: thumbnailSrc = remoteSrc || localSrc;
 
     $: mediaByType =

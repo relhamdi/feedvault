@@ -1,7 +1,5 @@
 import { api } from './client.js';
 
-export const MEDIA_BASE_URL = 'http://localhost:8000';
-
 export const itemsApi = {
     list: (feedId, params = {}) => {
         const query = new URLSearchParams({

@@ -1,10 +1,10 @@
-const BASE_URL = 'http://localhost:8000/api/v1';
+import { API_URL } from '../config.js';
 
 /**
  * Base fetch wrapper. Throws on non-2xx responses.
  */
 async function request(path, options = {}) {
-    const response = await fetch(`${BASE_URL}${path}`, {
+    const response = await fetch(`${API_URL}${path}`, {
         headers: { 'Content-Type': 'application/json' },
         ...options,
     });
