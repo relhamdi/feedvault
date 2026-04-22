@@ -1,11 +1,19 @@
 <script>
     import { feedsApi } from '../../api/feeds.js';
-    import { selectedFeedId, selectedSourceId } from '../../stores/navigation.js';
+    import { scrapeApi } from '../../api/scrape.js';
+    import {
+        selectedFeedId,
+        selectedSourceId,
+        triggerFeedRefresh,
+    } from '../../stores/navigation.js';
+    import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import FeedTab from './FeedTab.svelte';
 
     let feeds = [];
     let loading = true;
     let error = null;
+
+    let scrapingFeedIds = new Set();
 
     // Reload feeds whenever selected source changes
     $: if ($selectedSourceId) loadFeeds($selectedSourceId);
@@ -26,6 +34,45 @@
             loading = false;
         }
     }
+
+    async function startScrape(feedId) {
+        if (scrapingFeedIds.has(feedId)) return;
+        scrapingFeedIds.add(feedId);
+        scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
+        try {
+            const job = await scrapeApi.scrape({ feed_id: feedId, mode: 'INCREMENTAL' });
+            pollJob(job.id, feedId);
+        } catch (e) {
+            scrapingFeedIds.delete(feedId);
+            scrapingFeedIds = scrapingFeedIds;
+            alert(`Scrape failed: ${e.message}`);
+        }
+    }
+
+    function pollJob(jobId, feedId) {
+        const interval = setInterval(async () => {
+            try {
+                const job = await scrapeApi.getJob(jobId);
+                if (job.status === 'done' || job.status === 'error') {
+                    clearInterval(interval);
+                    scrapingFeedIds.delete(feedId);
+                    scrapingFeedIds = scrapingFeedIds;
+
+                    if (job.status === 'error') alert(`Scrape error: ${job.error_message}`);
+                    // Reload items if the completed feed is the selected one
+                    if (job.status === 'done' && feedId === $selectedFeedId) {
+                        triggerFeedRefresh();
+                    }
+                    refreshFeedStats(feedId);
+                    refreshSourceStats($selectedSourceId);
+                }
+            } catch (_) {
+                clearInterval(interval);
+                scrapingFeedIds.delete(feedId);
+                scrapingFeedIds = scrapingFeedIds;
+            }
+        }, 2000);
+    }
 </script>
 
 {#if $selectedSourceId}
@@ -42,7 +89,9 @@
                     <FeedTab
                         {feed}
                         active={$selectedFeedId === feed.id}
+                        scraping={scrapingFeedIds.has(feed.id)}
                         on:select={() => selectedFeedId.set(feed.id)}
+                        on:scrape={() => startScrape(feed.id)}
                     />
                 {/each}
             {/if}
