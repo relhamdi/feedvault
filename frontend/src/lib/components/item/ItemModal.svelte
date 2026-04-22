@@ -8,6 +8,8 @@
     export let onClose;
     export let onUpdate;
 
+    let mouseDownOnBackdrop = false;
+
     $: remoteSrc = item.thumbnail_url ?? null;
     $: localSrc = item.thumbnail_path ? `${MEDIA_URL}/${item.thumbnail_path}` : null;
     $: thumbnailSrc = remoteSrc || localSrc;
@@ -46,8 +48,13 @@
         if (e.key === 'Escape') onClose();
     }
 
+    function handleMouseDown(e) {
+        mouseDownOnBackdrop = e.target === e.currentTarget;
+    }
+
     function handleBackdropClick(e) {
-        if (e.target === e.currentTarget) onClose();
+        if (mouseDownOnBackdrop && e.target === e.currentTarget) onClose();
+        mouseDownOnBackdrop = false;
     }
 
     function handleImgError(e) {
@@ -62,6 +69,7 @@
 
 <div
     class="modal-backdrop"
+    on:mousedown={handleMouseDown}
     on:click={handleBackdropClick}
     on:keydown={handleBackdropKeydown}
     role="button"

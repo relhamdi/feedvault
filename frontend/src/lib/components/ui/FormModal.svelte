@@ -5,8 +5,15 @@
     export let submitLabel = 'Save';
     export let loading = false;
 
+    let mouseDownOnBackdrop = false;
+
+    function handleMouseDown(e) {
+        mouseDownOnBackdrop = e.target === e.currentTarget;
+    }
+
     function handleBackdropClick(e) {
-        if (e.target === e.currentTarget) onClose();
+        if (mouseDownOnBackdrop && e.target === e.currentTarget) onClose();
+        mouseDownOnBackdrop = false;
     }
 
     function handleKeydown(e) {
@@ -18,6 +25,7 @@
 
 <div
     class="backdrop"
+    on:mousedown={handleMouseDown}
     on:click={handleBackdropClick}
     on:keydown={handleKeydown}
     role="button"
