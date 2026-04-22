@@ -72,7 +72,7 @@
 
     async function handleDelete() {
         if (!deletingFeed) return;
-        const toDelete = deletingFeed; 
+        const toDelete = deletingFeed;
         try {
             await feedsApi.delete(toDelete.id);
             feeds = feeds.filter((f) => f.id !== toDelete.id);
@@ -151,6 +151,7 @@
 
 {#if $selectedSourceId}
     <div class="feed-tabs-wrapper">
+        <button class="add-tab-btn" title="Add feed" on:click={openCreate}>+</button>
         <div class="feed-tabs">
             {#if loading}
                 <span class="tabs-status">Loading...</span>
@@ -171,7 +172,6 @@
                 {/each}
             {/if}
         </div>
-        <button class="add-tab-btn" title="Add feed" on:click={openCreate}>+</button>
     </div>
 {/if}
 
@@ -225,8 +225,6 @@
         border-bottom: 1px solid var(--border);
         background: var(--bg-secondary);
         min-height: 48px;
-        gap: 0.25rem;
-        padding-right: 0.5rem;
     }
 
     .feed-tabs {
@@ -255,9 +253,11 @@
 
     .add-tab-btn {
         flex-shrink: 0;
-        width: 28px;
-        height: 28px;
-        border-radius: var(--radius);
+        width: 48px;
+        height: 48px;
+        border-radius: 0;
+        border-right: 1px solid var(--border);
+        padding-bottom: 5px;
         color: var(--text-muted);
         font-size: 1.25rem;
         display: flex;
