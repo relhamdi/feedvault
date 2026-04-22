@@ -12,7 +12,16 @@
     $: stats = $sourceStats[source.id] ?? null;
 </script>
 
-<button class="source-item" class:active on:click={() => dispatch('select')} title={source.name}>
+<button
+    class="source-item"
+    class:active
+    on:click={() => dispatch('select')}
+    on:contextmenu={(e) => {
+        e.preventDefault();
+        dispatch('contextmenu', e);
+    }}
+    title={source.name}
+>
     <div class="source-icon" style="background: {source.color || 'var(--bg-tertiary)'}">
         {#if source.icon_path}
             <img src={source.icon_path} alt={source.name} />

@@ -13,7 +13,14 @@
     $: stats = $feedStats[feed.id] ?? null;
 </script>
 
-<div class="feed-tab-wrapper">
+<div
+    class="feed-tab-wrapper"
+    role="group"
+    on:contextmenu={(e) => {
+        e.preventDefault();
+        dispatch('contextmenu', e);
+    }}
+>
     <button class="feed-tab" class:active on:click={() => dispatch('select')} title={feed.name}>
         {#if feed.icon_path}
             <img class="feed-icon" src={feed.icon_path} alt={feed.name} />
