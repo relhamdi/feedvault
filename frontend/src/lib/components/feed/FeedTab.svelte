@@ -55,7 +55,6 @@
         align-items: center;
         flex-shrink: 0;
         border-radius: var(--radius);
-        overflow: hidden;
     }
 
     .feed-tab-wrapper:hover .scrape-btn {
@@ -68,7 +67,7 @@
         align-items: center;
         gap: 0.4rem;
         padding: 0.375rem 0.5rem 0.375rem 0.75rem;
-        border-radius: var(--radius);
+        border-radius: var(--radius) 0 0 var(--radius);
         font-size: 0.875rem;
         white-space: nowrap;
         color: var(--text-secondary);
@@ -129,7 +128,7 @@
             opacity var(--transition),
             background var(--transition),
             color var(--transition);
-        border-radius: 0;
+        border-radius: 0 var(--radius) var(--radius) 0;
     }
 
     .scrape-btn.visible {
