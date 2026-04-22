@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON
+from sqlalchemy import JSON, ForeignKey, Integer
 from sqlmodel import Column, Field, Relationship, SQLModel
 
 from app.models.author import AuthorRead
@@ -18,7 +18,13 @@ if TYPE_CHECKING:
 
 
 class ItemBase(SQLModel):
-    feed_id: int = Field(foreign_key="feed.id")
+    feed_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("feed.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
     external_id: str = Field(index=True)
     title: str
     url: str
@@ -43,20 +49,37 @@ class ItemBase(SQLModel):
 
 class Item(ItemBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    author_id: int | None = Field(default=None, foreign_key="author.id")
+    author_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("author.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+    )
 
     feed: "Feed" = Relationship(back_populates="items")
     author: "Author" = Relationship(back_populates="items")
     categories: list["Category"] = Relationship(
         back_populates="items",
         link_model=ItemCategoryLink,
+        sa_relationship_kwargs={"passive_deletes": True},
     )
-    media: list["ItemMedia"] = Relationship(back_populates="item")
+    media: list["ItemMedia"] = Relationship(
+        back_populates="item",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class ItemCreate(ItemBase):
-    author_id: int | None = Field(default=None, foreign_key="author.id")
-    pass
+    author_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("author.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+    )
 
 
 class ItemUpdate(SQLModel):

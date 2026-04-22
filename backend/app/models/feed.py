@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON
+from sqlalchemy import JSON, ForeignKey, Integer
 from sqlmodel import Column, Field, Relationship, SQLModel
 
 from app.models.base import TimestampModel
@@ -13,7 +13,13 @@ if TYPE_CHECKING:
 
 class FeedBase(SQLModel):
     name: str
-    source_id: int = Field(foreign_key="source.id")
+    source_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("source.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
     url: str
     icon_path: str | None = None
     color: str | None = None
@@ -27,7 +33,10 @@ class Feed(FeedBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     source: "Source" = Relationship(back_populates="feeds")
-    items: list["Item"] = Relationship(back_populates="feed")
+    items: list["Item"] = Relationship(
+        back_populates="feed",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class FeedCreate(FeedBase):
