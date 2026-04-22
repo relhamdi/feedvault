@@ -6,7 +6,9 @@
         selectedSourceId,
     } from '../../stores/navigation.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
+    import { toastError } from '../../stores/toast.js';
     import ItemModal from '../item/ItemModal.svelte';
+    import ContextMenu from '../ui/ContextMenu.svelte';
     import ItemCard from './ItemCard.svelte';
 
     let items = [];
@@ -18,6 +20,7 @@
     let error = null;
 
     let selectedItem = null;
+    let contextMenu = null;
 
     // Reload items whenever selected feed changes
     $: if ($selectedFeedId || $feedRefreshTrigger) resetAndLoad($selectedFeedId);
@@ -69,6 +72,33 @@
         refreshFeedStats($selectedFeedId);
         refreshSourceStats($selectedSourceId);
     }
+
+    function handleCardContextMenu(e, item) {
+        e.preventDefault();
+        contextMenu = { x: e.clientX, y: e.clientY, item };
+    }
+
+    async function toggleRead(item) {
+        try {
+            const updated = { ...item, is_read: !item.is_read };
+            await itemsApi.update(item.id, { is_read: updated.is_read });
+            items = items.map((i) => (i.id === item.id ? updated : i));
+            refreshFeedStats($selectedFeedId);
+            refreshSourceStats($selectedSourceId);
+        } catch (e) {
+            toastError(`Failed to update item: ${e.message}`);
+        }
+    }
+
+    async function toggleFavorite(item) {
+        try {
+            const updated = { ...item, is_favorite: !item.is_favorite };
+            await itemsApi.update(item.id, { is_favorite: updated.is_favorite });
+            items = items.map((i) => (i.id === item.id ? updated : i));
+        } catch (e) {
+            toastError(`Failed to update item: ${e.message}`);
+        }
+    }
 </script>
 
 {#if $selectedFeedId}
@@ -82,7 +112,11 @@
         {:else}
             <div class="item-grid">
                 {#each items as item (item.id)}
-                    <ItemCard {item} on:click={() => openItem(item)} />
+                    <ItemCard
+                        {item}
+                        on:click={() => openItem(item)}
+                        on:contextmenu={(e) => handleCardContextMenu(e.detail, item)}
+                    />
                 {/each}
             </div>
         {/if}
@@ -99,6 +133,26 @@
             <ItemModal item={selectedItem} onClose={closeModal} onUpdate={handleItemUpdate} />
         {/if}
     </div>
+{/if}
+
+{#if contextMenu}
+    <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        items={[
+            {
+                label: contextMenu.item.is_read ? 'Mark as unread' : 'Mark as read',
+                icon: contextMenu.item.is_read ? '○' : '●',
+                action: () => toggleRead(contextMenu.item),
+            },
+            {
+                label: contextMenu.item.is_favorite ? 'Remove from favorites' : 'Add to favorites',
+                icon: contextMenu.item.is_favorite ? '♥' : '♡',
+                action: () => toggleFavorite(contextMenu.item),
+            },
+        ]}
+        onClose={() => (contextMenu = null)}
+    />
 {/if}
 
 <style>

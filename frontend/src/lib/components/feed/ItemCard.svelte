@@ -1,14 +1,26 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
     import { MEDIA_URL } from '../../config.js';
     import { formatDate } from '../../utils/format.js';
+
     export let item;
+
+    const dispatch = createEventDispatcher();
 
     $: thumbnailSrc = item.thumbnail_path
         ? `${MEDIA_URL}/${item.thumbnail_path}`
         : (item.thumbnail_url ?? null);
 </script>
 
-<article class="item-card" class:unread={!item.is_read} class:nsfw={item.is_nsfw}>
+<article
+    class="item-card"
+    class:unread={!item.is_read}
+    class:nsfw={item.is_nsfw}
+    on:contextmenu={(e) => {
+        e.preventDefault();
+        dispatch('contextmenu', e);
+    }}
+>
     <button class="card-btn" on:click>
         <!-- Thumbnail -->
         <div class="card-thumbnail">
