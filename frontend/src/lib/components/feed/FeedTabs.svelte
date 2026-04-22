@@ -1,4 +1,5 @@
 <script>
+    import { onDestroy } from 'svelte';
     import { feedsApi } from '../../api/feeds.js';
     import { scrapeApi } from '../../api/scrape.js';
     import {
@@ -7,13 +8,29 @@
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
+    import ConfirmModal from '../ui/ConfirmModal.svelte';
+    import ContextMenu from '../ui/ContextMenu.svelte';
+    import FeedModal from '../ui/FeedModal.svelte';
     import FeedTab from './FeedTab.svelte';
 
     let feeds = [];
     let loading = true;
     let error = null;
 
+    // Modals
+    let showFeedModal = false;
+    let editingFeed = null;
+
+    // Confirm delete
+    let showConfirm = false;
+    let deletingFeed = null;
+
+    // Context menu
+    let contextMenu = null;
+
+    // Scraping
     let scrapingFeedIds = new Set();
+    let pollingIntervals = {};
 
     // Reload feeds whenever selected source changes
     $: if ($selectedSourceId) loadFeeds($selectedSourceId);
@@ -35,6 +52,54 @@
         }
     }
 
+    function openCreate() {
+        editingFeed = null;
+        showFeedModal = true;
+        contextMenu = null;
+    }
+
+    function openEdit(feed) {
+        editingFeed = feed;
+        showFeedModal = true;
+        contextMenu = null;
+    }
+
+    function openDelete(feed) {
+        deletingFeed = feed;
+        showConfirm = true;
+        contextMenu = null;
+    }
+
+    async function handleDelete() {
+        if (!deletingFeed) return;
+        const toDelete = deletingFeed; 
+        try {
+            await feedsApi.delete(toDelete.id);
+            feeds = feeds.filter((f) => f.id !== toDelete.id);
+            if ($selectedFeedId === toDelete.id) {
+                selectedFeedId.set(feeds[0]?.id ?? null);
+            }
+            refreshSourceStats($selectedSourceId);
+        } catch (e) {
+            console.error('Delete failed:', e.message);
+        }
+    }
+
+    function handleSaved(saved) {
+        const idx = feeds.findIndex((f) => f.id === saved.id);
+        if (idx >= 0) {
+            feeds[idx] = saved;
+            feeds = feeds;
+        } else {
+            feeds = [...feeds, saved];
+            selectedFeedId.set(saved.id);
+        }
+    }
+
+    function handleContextMenu(e, feed) {
+        contextMenu = { x: e.detail.clientX, y: e.detail.clientY, feed };
+    }
+
     async function startScrape(feedId) {
         if (scrapingFeedIds.has(feedId)) return;
         scrapingFeedIds.add(feedId);
@@ -50,15 +115,19 @@
     }
 
     function pollJob(jobId, feedId) {
-        const interval = setInterval(async () => {
+        pollingIntervals[feedId] = setInterval(async () => {
             try {
                 const job = await scrapeApi.getJob(jobId);
                 if (job.status === 'done' || job.status === 'error') {
-                    clearInterval(interval);
+                    clearInterval(pollingIntervals[feedId]);
+                    delete pollingIntervals[feedId];
                     scrapingFeedIds.delete(feedId);
                     scrapingFeedIds = scrapingFeedIds;
 
-                    if (job.status === 'error') alert(`Scrape error: ${job.error_message}`);
+                    if (job.status === 'error') {
+                        console.error('Scrape error:', job.error_message);
+                        alert(`Scrape error: ${job.error_message}`);
+                    }
                     // Reload items if the completed feed is the selected one
                     if (job.status === 'done' && feedId === $selectedFeedId) {
                         triggerFeedRefresh();
@@ -67,12 +136,17 @@
                     refreshSourceStats($selectedSourceId);
                 }
             } catch (_) {
-                clearInterval(interval);
+                clearInterval(pollingIntervals[feedId]);
+                delete pollingIntervals[feedId];
                 scrapingFeedIds.delete(feedId);
                 scrapingFeedIds = scrapingFeedIds;
             }
         }, 2000);
     }
+
+    onDestroy(() => {
+        Object.values(pollingIntervals).forEach(clearInterval);
+    });
 </script>
 
 {#if $selectedSourceId}
@@ -92,12 +166,56 @@
                         scraping={scrapingFeedIds.has(feed.id)}
                         on:select={() => selectedFeedId.set(feed.id)}
                         on:scrape={() => startScrape(feed.id)}
+                        on:contextmenu={(e) => handleContextMenu(e, feed)}
                     />
                 {/each}
             {/if}
         </div>
-        <button class="add-tab-btn" title="Add feed">+</button>
+        <button class="add-tab-btn" title="Add feed" on:click={openCreate}>+</button>
     </div>
+{/if}
+
+<!-- Context menu -->
+{#if contextMenu}
+    <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        items={[
+            { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.feed) },
+            { label: 'Scrape', icon: '⟳', action: () => startScrape(contextMenu.feed.id) },
+            { separator: true },
+            {
+                label: 'Delete',
+                icon: '✕',
+                danger: true,
+                action: () => openDelete(contextMenu.feed),
+            },
+        ]}
+        onClose={() => (contextMenu = null)}
+    />
+{/if}
+
+<!-- Feed modal -->
+{#if showFeedModal}
+    <FeedModal
+        feed={editingFeed}
+        sourceId={$selectedSourceId}
+        onClose={() => (showFeedModal = false)}
+        onSaved={handleSaved}
+    />
+{/if}
+
+<!-- Confirm delete -->
+{#if showConfirm && deletingFeed}
+    <ConfirmModal
+        title="Delete feed"
+        message="Delete «{deletingFeed.name}»? All items will be permanently deleted."
+        onConfirm={handleDelete}
+        onClose={() => {
+            showConfirm = false;
+            deletingFeed = null;
+        }}
+    />
 {/if}
 
 <style>
