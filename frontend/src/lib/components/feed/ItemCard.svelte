@@ -3,7 +3,9 @@
     import { formatDate } from '../../utils/format.js';
     export let item;
 
-    $: thumbnailSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
+    $: thumbnailSrc = item.thumbnail_path
+        ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}`
+        : (item.thumbnail_url ?? null);
 </script>
 
 <article class="item-card" class:unread={!item.is_read} class:nsfw={item.is_nsfw}>
@@ -142,7 +144,7 @@
         text-transform: uppercase;
         letter-spacing: 0.04em;
         text-align: center;
-}
+    }
 
     .badge.nsfw {
         background: var(--danger);
