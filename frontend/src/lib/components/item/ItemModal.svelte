@@ -7,7 +7,9 @@
     export let onClose;
     export let onUpdate;
 
-    $: thumbnailSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
+    $: remoteSrc = item.thumbnail_url ?? null;
+    $: localSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
+    $: thumbnailSrc = remoteSrc || localSrc;
 
     $: mediaByType =
         item.media?.reduce((acc, m) => {
@@ -45,6 +47,13 @@
 
     function handleBackdropClick(e) {
         if (e.target === e.currentTarget) onClose();
+    }
+
+    function handleImgError(e) {
+        // If remote failed, fall back to local
+        if (thumbnailSrc === remoteSrc && localSrc) {
+            thumbnailSrc = localSrc;
+        }
     }
 </script>
 
@@ -97,7 +106,12 @@
             <!-- Left column -->
             <div class="col-left">
                 {#if thumbnailSrc}
-                    <img class="modal-thumbnail" src={thumbnailSrc} alt={item.title} />
+                    <img
+                        class="modal-thumbnail"
+                        src={thumbnailSrc}
+                        alt={item.title}
+                        on:error={handleImgError}
+                    />
                 {/if}
 
                 {#if item.summary}
