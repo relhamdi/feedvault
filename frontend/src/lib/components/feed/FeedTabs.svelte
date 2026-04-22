@@ -8,6 +8,7 @@
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
+    import { toastError, toastSuccess } from '../../stores/toast.js';
     import ConfirmModal from '../ui/ConfirmModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import FeedModal from '../ui/FeedModal.svelte';
@@ -110,7 +111,7 @@
         } catch (e) {
             scrapingFeedIds.delete(feedId);
             scrapingFeedIds = scrapingFeedIds;
-            alert(`Scrape failed: ${e.message}`);
+            toastError(`Scrape failed: ${e.message}`);
         }
     }
 
@@ -126,10 +127,11 @@
 
                     if (job.status === 'error') {
                         console.error('Scrape error:', job.error_message);
-                        alert(`Scrape error: ${job.error_message}`);
+                        toastError(`Scrape error: ${job.error_message}`);
                     }
                     // Reload items if the completed feed is the selected one
                     if (job.status === 'done' && feedId === $selectedFeedId) {
+                        toastSuccess(`Scrape complete — ${job.items_upserted} items`);
                         triggerFeedRefresh();
                     }
                     refreshFeedStats(feedId);
