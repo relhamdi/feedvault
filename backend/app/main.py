@@ -1,11 +1,14 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlmodel import Session
 
 from app.api.v1.router import router as v1_router
 from app.config import settings
+from app.database import get_session
 
 app = FastAPI(
     title="FeedVault",
@@ -30,3 +33,9 @@ app.mount("/media", StaticFiles(directory=media_path), name="media")
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/debug/pragma")
+def check_pragma(session: Session = Depends(get_session)):
+    result = session.exec(text("PRAGMA foreign_keys")).first()  # type: ignore
+    return {"foreign_keys": result[0]}
