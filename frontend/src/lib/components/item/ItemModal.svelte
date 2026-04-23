@@ -1,14 +1,22 @@
 <script>
     import { onMount } from 'svelte';
     import { itemsApi } from '../../api/items.js';
+    import { scrapeApi } from '../../api/scrape.js';
     import { MEDIA_URL } from '../../config.js';
+    import { toastError, toastSuccess } from '../../stores/toast.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
 
     export let item;
+    export let feedId;
+    export let paramsSchema = {}; // passed from ItemGrid
     export let onClose;
     export let onUpdate;
 
     let mouseDownOnBackdrop = false;
+
+    let scraping = false;
+
+    $: supportsScrapeById = 'external_ids' in paramsSchema;
 
     $: remoteSrc = item.thumbnail_url ?? null;
     $: localSrc = item.thumbnail_path ? `${MEDIA_URL}/${item.thumbnail_path}` : null;
@@ -29,6 +37,42 @@
             onUpdate?.(updated);
         }
     });
+
+    async function scrapeItem() {
+        if (scraping) return;
+        scraping = true;
+        try {
+            const job = await itemsApi.scrapeItem(feedId, item.external_id);
+            pollScrapeJob(job.id);
+        } catch (e) {
+            scraping = false;
+            toastError(`Scrape failed: ${e.message}`);
+        }
+    }
+
+    function pollScrapeJob(jobId) {
+        const interval = setInterval(async () => {
+            try {
+                const job = await scrapeApi.getJob(jobId);
+                if (job.status === 'done' || job.status === 'error') {
+                    clearInterval(interval);
+                    scraping = false;
+                    if (job.status === 'error') {
+                        toastError(`Scrape error: ${job.error_message}`);
+                    } else {
+                        toastSuccess('Item refreshed');
+                        // Reload item from API
+                        const updated = await itemsApi.get(item.id);
+                        item = updated;
+                        onUpdate?.(updated);
+                    }
+                }
+            } catch (_) {
+                clearInterval(interval);
+                scraping = false;
+            }
+        }, 2000);
+    }
 
     async function toggleFavorite() {
         const updated = { ...item, is_favorite: !item.is_favorite };
@@ -105,6 +149,17 @@
                     >
                         ↗ source
                     </a>
+                {/if}
+                {#if supportsScrapeById}
+                    <button
+                        class="action-btn"
+                        class:spinning={scraping}
+                        disabled={scraping}
+                        on:click={scrapeItem}
+                        title={scraping ? 'Refreshing...' : 'Refresh this item'}
+                    >
+                        ⟳
+                    </button>
                 {/if}
             </div>
             <button class="close-btn" on:click={onClose} title="Close">✕</button>
@@ -363,6 +418,21 @@
 
     .action-btn.active {
         color: #e8b84b;
+    }
+
+    .action-btn.spinning {
+        animation: spin 1s linear infinite;
+        pointer-events: none;
+        color: var(--accent);
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .close-btn {
