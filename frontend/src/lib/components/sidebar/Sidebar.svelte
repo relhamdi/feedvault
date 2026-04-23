@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
     import { selectedFeedId, selectedSourceId } from '../../stores/navigation.js';
+    import { toastError } from '../../stores/toast.js';
     import ConfirmModal from '../ui/ConfirmModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import SourceModal from '../ui/SourceModal.svelte';
@@ -31,6 +32,7 @@
             sources = (await sourcesApi.list()).items;
         } catch (e) {
             error = e.message;
+            toastError('Failed to load sources');
         } finally {
             loading = false;
         }
@@ -70,6 +72,7 @@
             }
         } catch (e) {
             console.error('Delete failed:', e.message);
+            toastError(`Delete failed: ${e.message}`);
         }
     }
 

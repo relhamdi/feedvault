@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
+    import { toastError } from '../../stores/toast.js';
     import FormField from '../ui/FormField.svelte';
     import FormModal from '../ui/FormModal.svelte';
 
@@ -50,7 +51,8 @@
             credentialsValues = Object.fromEntries(
                 Object.keys(credentialsSchema).map((k) => [k, ''])
             );
-        } catch (_) {
+        } catch (e) {
+            console.warn(`Failed to load credentialsSchema for slug '${slug}':`, e.message);
             credentialsSchema = {};
             credentialsValues = {};
         }
@@ -91,6 +93,7 @@
             onSaved(saved);
             onClose();
         } catch (e) {
+            toastError('Incorrect form');
             error = e.message;
         } finally {
             loading = false;

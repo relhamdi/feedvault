@@ -36,7 +36,8 @@
             // Get source slug from current source
             const source = await sourcesApi.get($selectedSourceId);
             currentParamsSchema = await sourcesApi.paramsSchema(source.slug);
-        } catch (_) {
+        } catch (e) {
+            console.warn(`Failed to load paramsSchema for ${selectedSourceId}:`, e.message);
             currentParamsSchema = {};
         }
     }
@@ -60,6 +61,7 @@
             offset += response.items.length;
         } catch (e) {
             error = e.message;
+            toastError('Failed to load items');
         } finally {
             loading = false;
             loadingMore = false;
@@ -102,6 +104,7 @@
             refreshFeedStats($selectedFeedId);
             refreshSourceStats($selectedSourceId);
         } catch (e) {
+            console.error('Failed to update item:', e.message);
             toastError(`Failed to update item: ${e.message}`);
         }
     }
@@ -112,6 +115,7 @@
             await itemsApi.update(item.id, { is_favorite: updated.is_favorite });
             items = items.map((i) => (i.id === item.id ? updated : i));
         } catch (e) {
+            console.error('Failed to update item:', e.message);
             toastError(`Failed to update item: ${e.message}`);
         }
     }

@@ -1,6 +1,7 @@
 <script>
     import { feedsApi } from '../../api/feeds.js';
     import { sourcesApi } from '../../api/sources.js';
+    import { toastError } from '../../stores/toast.js';
     import FormField from './FormField.svelte';
     import FormModal from './FormModal.svelte';
 
@@ -41,8 +42,9 @@
             JSON.parse(form.params);
             paramsError = null;
             return true;
-        } catch (_) {
+        } catch (e) {
             paramsError = 'Invalid JSON.';
+            toastError('Invalid JSON');
             return false;
         }
     }
@@ -81,6 +83,7 @@
             onClose();
         } catch (e) {
             error = e.message;
+            toastError('Incorrect form');
         } finally {
             loading = false;
         }
@@ -107,7 +110,7 @@
                 );
             }
         } catch (e) {
-            console.warn(`Failed to load paramsSchema for slug '${slug}'':`, e.message);
+            console.warn(`Failed to load paramsSchema for slug '${slug}':`, e.message);
             paramsSchema = {};
             paramsValues = {};
         }

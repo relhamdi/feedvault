@@ -61,6 +61,7 @@
             }
         } catch (e) {
             error = e.message;
+            toastError('Failed to load feeds');
         } finally {
             loading = false;
         }
@@ -96,6 +97,7 @@
             refreshSourceStats($selectedSourceId);
         } catch (e) {
             console.error('Delete failed:', e.message);
+            toastError(`Delete failed: ${e.message}`);
         }
     }
 
@@ -124,6 +126,7 @@
         } catch (e) {
             scrapingFeedIds.delete(feedId);
             scrapingFeedIds = scrapingFeedIds;
+            console.error('Scrape failed:', e.message);
             toastError(`Scrape failed: ${e.message}`);
         }
     }
@@ -150,7 +153,11 @@
                     refreshFeedStats(feedId);
                     refreshSourceStats($selectedSourceId);
                 }
-            } catch (_) {
+            } catch (e) {
+                console.warn(
+                    `Error during feed pollJob for feed ${feedId} and job ${jobId}:`,
+                    e.message
+                );
                 clearInterval(pollingIntervals[feedId]);
                 delete pollingIntervals[feedId];
                 scrapingFeedIds.delete(feedId);

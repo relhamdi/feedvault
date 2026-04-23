@@ -46,6 +46,7 @@
             pollScrapeJob(job.id);
         } catch (e) {
             scraping = false;
+            console.error('Scrape failed:', e.message);
             toastError(`Scrape failed: ${e.message}`);
         }
     }
@@ -67,7 +68,11 @@
                         onUpdate?.(updated);
                     }
                 }
-            } catch (_) {
+            } catch (e) {
+                console.warn(
+                    `Error during pollJob for item ${item.id} and job ${jobId}:`,
+                    e.message
+                );
                 clearInterval(interval);
                 scraping = false;
             }
