@@ -29,6 +29,14 @@ class BaseSource(ABC):
         """
         return {}
 
+    @staticmethod
+    def build_fetch_id(external_id: str, raw_extra: dict) -> str:
+        """Build the fetch ID passed to fetch_by_ids.
+        Override in sources that require a specific format.
+        Default: returns external_id as-is.
+        """
+        return external_id
+
     @abstractmethod
     def fetch(self, job: ScrapeJob) -> list[RawItem]:
         """Fetch raw data from the source."""
