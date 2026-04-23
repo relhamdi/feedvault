@@ -1,19 +1,21 @@
 <script>
     import { feedsApi } from '../../api/feeds.js';
+    import { sourcesApi } from '../../api/sources.js';
     import FormField from './FormField.svelte';
     import FormModal from './FormModal.svelte';
 
-    const paramsHint = 'JSON config for the scraper, e.g. {"game_id": 11534}';
-
     export let feed = null; // null = create mode
-    export let sourceId; // pre-filled from selected source
+    export let source;
     export let onClose;
     export let onSaved;
 
+    let paramsSchema = {};
+    let paramsValues = {};
     let loading = false;
     let error = null;
 
     $: isEdit = feed !== null;
+    $: if (source?.slug) fetchParamsSchema(source.slug);
 
     let form = {
         name: feed?.name ?? '',
@@ -62,8 +64,10 @@
                 icon_path: form.icon_path || null,
                 default_tags: parseTags(form.default_tags),
                 is_active: form.is_active,
-                params: JSON.parse(form.params),
-                source_id: sourceId,
+                params:
+                    Object.keys(paramsSchema).length > 0 ? buildParams() : JSON.parse(form.params),
+
+                source_id: source.id,
             };
 
             const response = isEdit
@@ -80,6 +84,52 @@
         } finally {
             loading = false;
         }
+    }
+
+    async function fetchParamsSchema(slug) {
+        try {
+            paramsSchema = await sourcesApi.paramsSchema(slug);
+            if (!isEdit) {
+                // Initialize empty values, external_ids as array
+                paramsValues = Object.fromEntries(
+                    Object.keys(paramsSchema).map((k) => [k, k === 'external_ids' ? '' : ''])
+                );
+            } else {
+                // Pre-fill from existing feed.params
+                paramsValues = Object.fromEntries(
+                    Object.keys(paramsSchema).map((k) => {
+                        const val = feed?.params?.[k];
+                        if (k === 'external_ids' && Array.isArray(val)) {
+                            return [k, val.join(', ')];
+                        }
+                        return [k, val ?? ''];
+                    })
+                );
+            }
+        } catch (e) {
+            console.warn(`Failed to load paramsSchema for slug '${slug}'':`, e.message);
+            paramsSchema = {};
+            paramsValues = {};
+        }
+    }
+
+    function buildParams() {
+        const result = {};
+        for (const [key, value] of Object.entries(paramsValues)) {
+            if (!value && value !== 0) continue;
+            if (key === 'external_ids') {
+                const ids = String(value)
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                if (ids.length > 0) result[key] = ids;
+            } else {
+                // Try to cast to number if possible
+                const num = Number(value);
+                result[key] = isNaN(num) || value === '' ? value : num;
+            }
+        }
+        return result;
     }
 </script>
 
@@ -125,15 +175,46 @@
         />
     </FormField>
 
-    <FormField id="feed-params" label="Params" hint={paramsHint} error={paramsError}>
-        <textarea
+    {#if Object.keys(paramsSchema).length > 0}
+        <div class="params-section">
+            <p class="section-title">Params</p>
+            {#each Object.entries(paramsSchema) as [key, hint]}
+                <FormField id="param-{key}" label={key} hint={String(hint)}>
+                    {#if key === 'external_ids'}
+                        <textarea
+                            id="param-{key}"
+                            bind:value={paramsValues[key]}
+                            rows="2"
+                            placeholder="Coma separated IDs..."
+                            spellcheck="false"
+                        ></textarea>
+                    {:else}
+                        <input
+                            id="param-{key}"
+                            type="text"
+                            bind:value={paramsValues[key]}
+                            placeholder={String(hint)}
+                        />
+                    {/if}
+                </FormField>
+            {/each}
+        </div>
+    {:else}
+        <FormField
             id="feed-params"
-            bind:value={form.params}
-            on:blur={validateParams}
-            rows="4"
-            spellcheck="false"
-        ></textarea>
-    </FormField>
+            label="Params"
+            hint="JSON config for the scraper"
+            error={paramsError}
+        >
+            <textarea
+                id="feed-params"
+                bind:value={form.params}
+                on:blur={validateParams}
+                rows="4"
+                spellcheck="false"
+            ></textarea>
+        </FormField>
+    {/if}
 
     <div class="toggle-row">
         <label for="feed-active" class="toggle-label">Active</label>
@@ -167,5 +248,23 @@
         font-size: 0.8rem;
         font-weight: 500;
         color: var(--text-secondary);
+    }
+
+    .params-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-secondary);
+    }
+
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
     }
 </style>
