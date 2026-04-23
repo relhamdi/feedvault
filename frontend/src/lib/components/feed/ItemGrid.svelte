@@ -1,5 +1,6 @@
 <script>
     import { itemsApi } from '../../api/items.js';
+    import { sourcesApi } from '../../api/sources.js';
     import {
         feedRefreshTrigger,
         selectedFeedId,
@@ -22,8 +23,23 @@
     let selectedItem = null;
     let contextMenu = null;
 
+    // Loaded schema for item modal
+    let currentParamsSchema = {};
+
+    $: if ($selectedFeedId) loadParamsSchema();
+
     // Reload items whenever selected feed changes
     $: if ($selectedFeedId || $feedRefreshTrigger) resetAndLoad($selectedFeedId);
+
+    async function loadParamsSchema() {
+        try {
+            // Get source slug from current source
+            const source = await sourcesApi.get($selectedSourceId);
+            currentParamsSchema = await sourcesApi.paramsSchema(source.slug);
+        } catch (_) {
+            currentParamsSchema = {};
+        }
+    }
 
     async function resetAndLoad(feedId) {
         offset = 0;
@@ -130,7 +146,13 @@
         {/if}
 
         {#if selectedItem}
-            <ItemModal item={selectedItem} onClose={closeModal} onUpdate={handleItemUpdate} />
+            <ItemModal
+                item={selectedItem}
+                feedId={$selectedFeedId}
+                paramsSchema={currentParamsSchema}
+                onClose={closeModal}
+                onUpdate={handleItemUpdate}
+            />
         {/if}
     </div>
 {/if}
