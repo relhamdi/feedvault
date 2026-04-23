@@ -22,10 +22,26 @@ class BaseSource(ABC):
         self.source = source
         self.params = params or {}
 
+    @staticmethod
+    def parse_feed_url(url: str) -> dict:
+        """Extract feed params from a URL. Override per source.
+        Returns empty dict if extraction is not supported or fails.
+        """
+        return {}
+
     @abstractmethod
     def fetch(self, job: ScrapeJob) -> list[RawItem]:
         """Fetch raw data from the source."""
         ...
+
+    def fetch_by_ids(self, external_ids: list[str]) -> list[RawItem]:
+        """Fetch specific items by external ID.
+        Override in sources that support individual item fetching.
+        Raises NotImplementedError if not supported.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support fetch_by_ids"
+        )
 
     @abstractmethod
     def map(self, raw: RawItem) -> NormalizedItem:

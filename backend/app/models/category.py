@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.base import TimestampModel
@@ -11,8 +12,23 @@ if TYPE_CHECKING:
 
 class CategoryBase(SQLModel):
     name: str
-    parent_id: int | None = Field(default=None, foreign_key="category.id")
-    source_id: int | None = Field(default=None, foreign_key="source.id")
+    parent_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            # If parent is deleted, then becomes the root
+            ForeignKey("category.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+    )
+    source_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("source.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
+    )
 
 
 class Category(CategoryBase, TimestampModel, table=True):
@@ -21,6 +37,7 @@ class Category(CategoryBase, TimestampModel, table=True):
     items: list["Item"] = Relationship(
         back_populates="categories",
         link_model=ItemCategoryLink,
+        sa_relationship_kwargs={"passive_deletes": True},
     )
 
 

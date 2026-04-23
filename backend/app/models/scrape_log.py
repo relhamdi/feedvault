@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from enum import Enum
 
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 
@@ -11,9 +12,29 @@ class LogLevel(str, Enum):
 
 
 class ScrapeLogBase(SQLModel):
-    job_id: int = Field(foreign_key="scrapejobrecord.id")
-    feed_id: int | None = Field(default=None, foreign_key="feed.id")
-    source_id: int | None = Field(default=None, foreign_key="source.id")
+    job_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("scrapejobrecord.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
+    feed_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("feed.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
+    )
+    source_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey("source.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
+    )
     level: LogLevel = LogLevel.INFO
     message: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

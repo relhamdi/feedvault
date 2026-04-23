@@ -87,6 +87,7 @@ class NormalizedItem(BaseModel):
     is_public: bool = True
     source_published_at: datetime
     source_updated_at: datetime
+    partial: bool = False  # If True, upsert only non-None fields
 
     author: RawAuthor | None = None
     categories: list[RawCategory] = []

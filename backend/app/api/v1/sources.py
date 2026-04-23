@@ -39,6 +39,12 @@ def get_source(source_id: int, session: Session = Depends(get_session)):
 
 @router.post("/", response_model=SourceRead, status_code=201)
 def create_source(source_in: SourceCreate, session: Session = Depends(get_session)):
+    existing = session.exec(select(Source).where(Source.slug == source_in.slug)).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Source with slug '{source_in.slug}' already exists.",
+        )
     source = Source.model_validate(source_in)
     session.add(source)
     session.commit()
@@ -168,6 +174,18 @@ def bootstrap_all_sources(session: Session = Depends(get_session)):
         source, was_created = _bootstrap_one(slug, session)
         (created if was_created else existing).append(source)
     return BootstrapAllResult(created=created, existing=existing)
+
+
+@router.get("/bootstrap/{slug}/params-schema")
+def get_params_schema_route(slug: str) -> dict:
+    """Return the expected params keys for a registered scraper."""
+    reg = get_registration(slug)
+    if reg is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No scraper registered for slug '{slug}'.",
+        )
+    return reg.params_schema
 
 
 @router.get("/bootstrap/{slug}/credentials-schema")

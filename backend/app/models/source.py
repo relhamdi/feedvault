@@ -33,7 +33,10 @@ class Source(SourceBase, TimestampModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     credentials: bytes | None = None
 
-    feeds: list["Feed"] = Relationship(back_populates="source")
+    feeds: list["Feed"] = Relationship(
+        back_populates="source",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 class SourceCreate(SourceBase):
