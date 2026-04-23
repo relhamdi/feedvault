@@ -150,7 +150,7 @@ def upsert_item(
     normalized: NormalizedItem,
     feed: Feed,
     source_slug: str,
-) -> Item:
+) -> Item | None:
     assert feed.id is not None
     now = datetime.now(UTC)
 
@@ -189,6 +189,10 @@ def upsert_item(
     ).first()
 
     if not item:
+        # Item was trashed before we ever scraped it — skip
+        if normalized.partial:
+            return None
+
         item = Item(
             feed_id=feed.id,
             author_id=author_id,
@@ -212,22 +216,31 @@ def upsert_item(
             last_seen_at=now,
         )
     else:
-        item.title = normalized.title
-        item.url = normalized.url
-        item.description = normalized.description
-        item.summary = normalized.summary
-        item.tags = tags
-        item.stats = normalized.stats
-        item.raw_extra = normalized.raw_extra
-        item.meta = normalized.meta
-        item.is_nsfw = normalized.is_nsfw
-        item.is_public = normalized.is_public
-        item.source_updated_at = normalized.source_updated_at
-        item.last_scraped_at = now
-        item.last_seen_at = now
-        item.author_id = author_id
-        if thumbnail_path:
-            item.thumbnail_path = thumbnail_path
+        # Trash/removed item — only update non-None fields
+        if normalized.partial:
+            if normalized.is_public is not None:
+                item.is_public = normalized.is_public
+            if normalized.raw_extra:
+                item.raw_extra = {**item.raw_extra, **normalized.raw_extra}
+            item.last_scraped_at = now
+            item.last_seen_at = now
+        else:
+            item.title = normalized.title
+            item.url = normalized.url
+            item.description = normalized.description
+            item.summary = normalized.summary
+            item.tags = tags
+            item.stats = normalized.stats
+            item.raw_extra = normalized.raw_extra
+            item.meta = normalized.meta
+            item.is_nsfw = normalized.is_nsfw
+            item.is_public = normalized.is_public
+            item.source_updated_at = normalized.source_updated_at
+            item.last_scraped_at = now
+            item.last_seen_at = now
+            item.author_id = author_id
+            if thumbnail_path:
+                item.thumbnail_path = thumbnail_path
 
     session.add(item)
     session.flush()

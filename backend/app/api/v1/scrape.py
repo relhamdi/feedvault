@@ -198,6 +198,9 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                     feed=feed,
                     source_slug=source.slug,
                 )
+                if item is None:
+                    continue
+
                 assert item.id is not None
                 item_ids.append(item.id)
                 job_record.last_external_id = normalized.external_id
