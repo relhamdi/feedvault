@@ -34,6 +34,7 @@ class ScrapeRequest(BaseModel):
     mode: ScrapeMode = ScrapeMode.INCREMENTAL
     date_from: datetime | None = None
     date_to: datetime | None = None
+    external_ids: list[str] | None = None
 
 
 def _make_aware(dt: datetime | None) -> datetime | None:
@@ -165,7 +166,29 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             )
 
             scraper = _get_scraper(source, feed, session)
-            normalized_items = scraper.run(job)
+
+            if payload.external_ids:
+                # Fetch by IDs mode — bypass normal fetch/run pipeline
+                job.target_type = ScrapeTargetType.ITEM
+
+                try:
+                    raw_items = scraper.fetch_by_ids(payload.external_ids)
+                except NotImplementedError as e:
+                    raise ValueError(
+                        f"Source '{source.slug}' does not support fetch_by_ids"
+                    ) from e
+
+                normalized_items = [scraper.map(r) for r in raw_items]
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    f"Fetching {len(payload.external_ids)} item(s) by ID",
+                )
+            else:
+                normalized_items = scraper.run(job)
 
             item_ids = []
             for normalized in normalized_items:
