@@ -78,18 +78,15 @@
                 color: form.color || null,
             };
 
-            let saved;
-            if (isEdit) {
-                saved = await sourcesApi.update(source.id, payload);
-            } else {
-                saved = await sourcesApi.create(payload);
-                // Save credentials if any filled
-                const filledCredentials = Object.fromEntries(
-                    Object.entries(credentialsValues).filter(([_, v]) => v !== '')
-                );
-                if (Object.keys(filledCredentials).length > 0) {
-                    await sourcesApi.updateCredentials(saved.id, filledCredentials);
-                }
+            const saved = isEdit
+                ? await sourcesApi.update(source.id, payload)
+                : await sourcesApi.create(payload);
+
+            const filledCredentials = Object.fromEntries(
+                Object.entries(credentialsValues).filter(([_, v]) => v !== '')
+            );
+            if (Object.keys(filledCredentials).length > 0) {
+                await sourcesApi.updateCredentials(saved.id, filledCredentials);
             }
             onSaved(saved);
             onClose();
