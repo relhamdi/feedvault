@@ -14,6 +14,7 @@ class ScraperRegistration:
     # Optional metadata for POST /sources/bootstrap — unused if empty
     default_source: dict = field(default_factory=dict)
     credentials_schema: dict = field(default_factory=dict)
+    params_schema: dict = field(default_factory=dict)
 
 
 _REGISTRY: dict[str, ScraperRegistration] = {}
@@ -24,6 +25,7 @@ def register_scraper(
     *,
     default_source: dict | None = None,
     credentials_schema: dict | None = None,
+    params_schema: dict | None = None,
 ) -> Callable:
     """Decorator — registers a scraper based on a slug.
 
@@ -34,7 +36,10 @@ def register_scraper(
         "base_url": "https://gamebanana.com/apiv8",
         "color": "#D2BC2B",
         "icon_path": "https://images.gamebanana.com/static/img/banana.png",
-    })
+    },
+    params_schema={
+        "game_id": 11534,
+    },
     """
 
     def decorator(cls: ScraperClass) -> ScraperClass:
@@ -43,6 +48,7 @@ def register_scraper(
             cls=cls,
             default_source=default_source or {},
             credentials_schema=credentials_schema or {},
+            params_schema=params_schema or {},
         )
         return cls
 

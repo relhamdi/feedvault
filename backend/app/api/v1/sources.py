@@ -176,6 +176,18 @@ def bootstrap_all_sources(session: Session = Depends(get_session)):
     return BootstrapAllResult(created=created, existing=existing)
 
 
+@router.get("/bootstrap/{slug}/params-schema")
+def get_params_schema_route(slug: str) -> dict:
+    """Return the expected params keys for a registered scraper."""
+    reg = get_registration(slug)
+    if reg is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No scraper registered for slug '{slug}'.",
+        )
+    return reg.params_schema
+
+
 @router.get("/bootstrap/{slug}/credentials-schema")
 def get_credentials_schema(slug: str) -> dict:
     """Return the expected credentials schema for a registered scraper."""
