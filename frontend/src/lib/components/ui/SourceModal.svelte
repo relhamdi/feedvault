@@ -1,6 +1,5 @@
 <script>
     import { onMount } from 'svelte';
-    import { api } from '../../api/client.js';
     import { sourcesApi } from '../../api/sources.js';
     import FormField from '../ui/FormField.svelte';
     import FormModal from '../ui/FormModal.svelte';
@@ -46,7 +45,7 @@
 
     async function fetchCredentialsSchema(slug) {
         try {
-            credentialsSchema = await api.get(`/sources/bootstrap/${slug}/credentials-schema`);
+            credentialsSchema = await sourcesApi.credentialsSchema(slug);
             // Initialize empty values for each key
             credentialsValues = Object.fromEntries(
                 Object.keys(credentialsSchema).map((k) => [k, ''])
@@ -89,7 +88,7 @@
                     Object.entries(credentialsValues).filter(([_, v]) => v !== '')
                 );
                 if (Object.keys(filledCredentials).length > 0) {
-                    await api.put(`/sources/${saved.id}/credentials`, filledCredentials);
+                    await sourcesApi.updateCredentials(saved.id, filledCredentials);
                 }
             }
             onSaved(saved);

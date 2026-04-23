@@ -12,6 +12,9 @@ export const sourcesApi = {
     create: (data) => api.post('/sources/', data),
     update: (id, data) => api.patch(`/sources/${id}`, data),
     delete: (id) => api.delete(`/sources/${id}`),
+    updateCredentials: (id, data) => api.put(`/sources/${id}/credentials`, data),
     bootstrap: (slug) => api.post(`/sources/bootstrap/${slug}`),
     bootstrapAll: () => api.post('/sources/bootstrap'),
+    credentialsSchema: (slug) => api.get(`/sources/bootstrap/${slug}/credentials-schema`),
+    paramsSchema: (slug) => api.get(`/sources/bootstrap/${slug}/params-schema`),
 };
