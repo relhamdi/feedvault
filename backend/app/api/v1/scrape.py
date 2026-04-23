@@ -235,11 +235,12 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                 session.add(job_record)
                 session.commit()
 
-            feed.last_scraped_at = datetime.now(UTC)
-            session.add(feed)
-            session.commit()
-
-            _update_source_last_scraped(session, feed.source_id)
+            # Only update feed.last_scraped_at for full/incremental scrapes
+            if not effective_external_ids:
+                feed.last_scraped_at = datetime.now(UTC)
+                session.add(feed)
+                session.commit()
+                _update_source_last_scraped(session, feed.source_id)
 
             job_record.status = ScrapeJobStatus.DONE
             job_record.finished_at = datetime.now(UTC)
