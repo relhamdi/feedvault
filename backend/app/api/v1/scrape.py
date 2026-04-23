@@ -18,6 +18,7 @@ from app.core.sources.registry import get_scraper_class, registered_slugs
 from app.core.upsert import upsert_item
 from app.database import engine, get_session
 from app.models.feed import Feed
+from app.models.item import Item
 from app.models.pagination import PaginatedResponse
 from app.models.scrape_job import ScrapeJobRecord, ScrapeJobRecordRead
 from app.models.scrape_log import LogLevel, ScrapeLog, ScrapeLogRead
@@ -167,26 +168,53 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
 
             scraper = _get_scraper(source, feed, session)
 
-            if payload.external_ids:
+            # If feed.params contains external_ids and no explicit ones in payload, use them
+            effective_external_ids = payload.external_ids or feed.params.get(
+                "external_ids"
+            )
+
+            if effective_external_ids:
                 # Fetch by IDs mode — bypass normal fetch/run pipeline
                 job.target_type = ScrapeTargetType.ITEM
 
-                try:
-                    raw_items = scraper.fetch_by_ids(payload.external_ids)
-                except NotImplementedError as e:
-                    raise ValueError(
-                        f"Source '{source.slug}' does not support fetch_by_ids"
-                    ) from e
+                cls = get_scraper_class(source.slug)
+                assert cls is not None
 
-                normalized_items = [scraper.map(r) for r in raw_items]
+                resolved_ids = []
+                # Check if item exists or not (create or update)
+                for ext_id in effective_external_ids:
+                    existing = session.exec(
+                        select(Item)
+                        .where(Item.external_id == ext_id)
+                        .where(Item.feed_id == feed.id)
+                    ).first()
+
+                    if existing:
+                        # Known item — build fetch ID from raw_extra
+                        resolved_ids.append(
+                            cls.build_fetch_id(ext_id, existing.raw_extra)
+                        )
+                    else:
+                        # Unknown item — use as-is, scraper validates format
+                        resolved_ids.append(ext_id)
+
                 _log(
                     session,
                     job_record.id,
                     feed.id,
                     source.id,
                     LogLevel.INFO,
-                    f"Fetching {len(payload.external_ids)} item(s) by ID",
+                    f"Fetching {len(resolved_ids)} item(s) by ID: {resolved_ids}",
                 )
+
+                try:
+                    raw_items = scraper.fetch_by_ids(resolved_ids)
+                except NotImplementedError as e:
+                    raise ValueError(
+                        f"Source '{source.slug}' does not support fetch_by_ids"
+                    ) from e
+
+                normalized_items = [scraper.map(r) for r in raw_items]
             else:
                 normalized_items = scraper.run(job)
 
