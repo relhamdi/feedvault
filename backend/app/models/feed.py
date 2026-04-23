@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel
 from sqlalchemy import JSON, ForeignKey, Integer
 from sqlmodel import Column, Field, Relationship, SQLModel
 
@@ -55,3 +56,8 @@ class FeedUpdate(SQLModel):
 
 class FeedRead(FeedBase, TimestampModel):
     id: int
+
+
+class FeedCreateResponse(BaseModel):
+    feed: FeedRead
+    warning: str | None = None
