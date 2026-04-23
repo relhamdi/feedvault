@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.models.base import TimestampModel
@@ -10,7 +11,13 @@ if TYPE_CHECKING:
 
 class AuthorBase(SQLModel):
     external_id: str
-    source_id: int = Field(foreign_key="source.id")
+    source_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("source.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
     name: str
     url: str | None = None
     icon_url: str | None = None

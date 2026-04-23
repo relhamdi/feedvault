@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.core.sources.models import RawMediaType as MediaType
@@ -10,7 +11,13 @@ if TYPE_CHECKING:
 
 
 class ItemMediaBase(SQLModel):
-    item_id: int = Field(foreign_key="item.id")
+    item_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("item.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
     media_type: MediaType
     url: str
     label: str | None = None

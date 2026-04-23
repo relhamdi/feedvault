@@ -1,13 +1,26 @@
 from datetime import UTC, datetime
 
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 from app.core.sources.models import ScrapeJobStatus, ScrapeMode
 
 
 class ScrapeJobRecordBase(SQLModel):
-    feed_id: int = Field(foreign_key="feed.id")
-    source_id: int = Field(foreign_key="source.id")
+    feed_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("feed.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
+    source_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("source.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
     mode: ScrapeMode
     status: ScrapeJobStatus = ScrapeJobStatus.PENDING
     started_at: datetime | None = None
