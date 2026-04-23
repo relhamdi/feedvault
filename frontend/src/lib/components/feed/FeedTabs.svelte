@@ -2,6 +2,7 @@
     import { onDestroy } from 'svelte';
     import { feedsApi } from '../../api/feeds.js';
     import { scrapeApi } from '../../api/scrape.js';
+    import { sourcesApi } from '../../api/sources.js';
     import {
         selectedFeedId,
         selectedSourceId,
@@ -33,8 +34,20 @@
     let scrapingFeedIds = new Set();
     let pollingIntervals = {};
 
+    let currentSource = null;
     // Reload feeds whenever selected source changes
-    $: if ($selectedSourceId) loadFeeds($selectedSourceId);
+    $: if ($selectedSourceId) {
+        loadSource($selectedSourceId);
+        loadFeeds($selectedSourceId);
+    }
+
+    async function loadSource(sourceId) {
+        try {
+            currentSource = await sourcesApi.get(sourceId);
+        } catch (e) {
+            console.warn(`Failed to load source ${sourceId}:`, e.message);
+        }
+    }
 
     async function loadFeeds(sourceId) {
         loading = true;
@@ -153,7 +166,12 @@
 
 {#if $selectedSourceId}
     <div class="feed-tabs-wrapper">
-        <button class="add-tab-btn" title="Add feed" on:click={openCreate}>+</button>
+        <button
+            class="add-tab-btn"
+            title={currentSource ? 'Add feed' : 'Loading...'}
+            disabled={!currentSource}
+            on:click={openCreate}>+</button
+        >
         <div class="feed-tabs">
             {#if loading}
                 <span class="tabs-status">Loading...</span>
@@ -201,7 +219,7 @@
 {#if showFeedModal}
     <FeedModal
         feed={editingFeed}
-        sourceId={$selectedSourceId}
+        source={currentSource}
         onClose={() => (showFeedModal = false)}
         onSaved={handleSaved}
     />
