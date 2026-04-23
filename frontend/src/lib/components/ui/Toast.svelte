@@ -35,7 +35,13 @@
     }
 </script>
 
-<div class="toast" class:visible class:error={type === 'error'} class:success={type === 'success'}>
+<div
+    class="toast"
+    class:visible
+    class:error={type === 'error'}
+    class:success={type === 'success'}
+    class:warning={type === 'warning'}
+>
     <span class="toast-message">{message}</span>
     <button class="toast-close" on:click={dismiss}>✕</button>
     <div class="toast-progress" style="width: {progress}%"></div>
@@ -75,6 +81,10 @@
         border-left: 3px solid var(--success);
     }
 
+    .toast.warning {
+        border-left: 3px solid var(--warning);
+    }
+
     .toast-message {
         flex: 1;
         font-size: 0.875rem;
@@ -109,5 +119,9 @@
     }
     .toast.success .toast-progress {
         background: var(--success);
+    }
+
+    .toast.warning .toast-progress {
+        background: var(--warning);
     }
 </style>
