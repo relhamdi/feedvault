@@ -66,9 +66,12 @@
                 source_id: sourceId,
             };
 
-            const saved = isEdit
+            const response = isEdit
                 ? await feedsApi.update(feed.id, payload)
                 : await feedsApi.create(payload);
+
+            const saved = isEdit ? response : response.feed;
+            if (response.warning) toastWarning(response.warning);
 
             onSaved(saved);
             onClose();
