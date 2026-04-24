@@ -3,7 +3,7 @@
     import { rootApi } from '../../api/client.js';
     import { sourcesApi } from '../../api/sources.js';
     import { triggerSourceRefresh } from '../../stores/navigation.js';
-    import { getPollInterval } from '../../stores/scraping.js';
+    import { getPollInterval, setPollInterval } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import ThemeToggle from './ThemeToggle.svelte';
@@ -96,7 +96,7 @@
     function savePollInterval() {
         const val = Math.max(500, Math.min(10000, pollInterval));
         pollInterval = val;
-        localStorage.setItem('pollInterval', String(val));
+        setPollInterval(val);
         toastSuccess('Polling interval saved.');
     }
 </script>
