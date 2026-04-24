@@ -52,6 +52,7 @@
     }
 
     async function resetAndLoad(feedId) {
+        if (!feedId) return;
         offset = 0;
         items = [];
         total = 0;
