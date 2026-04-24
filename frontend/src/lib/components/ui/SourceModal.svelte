@@ -5,6 +5,7 @@
     import { parseTags } from '../../utils/format.js';
     import FormField from '../ui/FormField.svelte';
     import FormModal from '../ui/FormModal.svelte';
+    import ToggleField from '../ui/ToggleField.svelte';
 
     export let source = null; // null = create mode
     export let onClose;
@@ -160,10 +161,7 @@
         />
     </FormField>
 
-    <div class="toggle-row">
-        <label for="source-active" class="toggle-label">Active</label>
-        <input id="source-active" type="checkbox" bind:checked={form.is_active} />
-    </div>
+    <ToggleField id="source-active" label="Active" bind:checked={form.is_active} />
 
     <!-- Credentials — create mode only, shown if schema available -->
     {#if !isEdit && Object.keys(credentialsSchema).length > 0}
@@ -200,17 +198,3 @@
         </div>
     {/if}
 </FormModal>
-
-<style>
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .toggle-label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-</style>

@@ -3,6 +3,7 @@
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
     import { parseTags } from '../../utils/format.js';
+    import ToggleField from '../ui/ToggleField.svelte';
     import FormField from './FormField.svelte';
     import FormModal from './FormModal.svelte';
 
@@ -213,22 +214,5 @@
         </FormField>
     {/if}
 
-    <div class="toggle-row">
-        <label for="feed-active" class="toggle-label">Active</label>
-        <input id="feed-active" type="checkbox" bind:checked={form.is_active} />
-    </div>
+    <ToggleField id="source-active" label="Active" bind:checked={form.is_active} />
 </FormModal>
-
-<style>
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .toggle-label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-</style>
