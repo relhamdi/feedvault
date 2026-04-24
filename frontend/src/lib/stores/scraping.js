@@ -1,12 +1,20 @@
 import { scrapeApi } from '../api/scrape.js';
 
 /**
+ * Retrieve poll interval from localStorage for the settings
+ */
+export function getPollInterval() {
+    return parseInt(localStorage.getItem('pollInterval') ?? '2000');
+}
+
+/**
  * Poll a scrape job until completion.
  * @param {int} jobId Job ID
  * @param {Object} param1 Object with onDone and onError callbacks
  * @returns Cleanup function to cancel polling
  */
-export function pollJob(jobId, { onDone = () => {}, onError = (msg) => {}, interval = 2000 } = {}) {
+export function pollJob(jobId, { onDone = () => {}, onError = (msg) => {} } = {}) {
+    const interval = getPollInterval();
     const id = setInterval(async () => {
         try {
             const job = await scrapeApi.getJob(jobId);
@@ -23,5 +31,5 @@ export function pollJob(jobId, { onDone = () => {}, onError = (msg) => {}, inter
             console.warn(`Error during pollJob for job ${jobId}:`, e.message);
         }
     }, interval);
-    return () => clearInterval(id); // returns cleanup function
+    return () => clearInterval(id); // Returns cleanup function
 }
