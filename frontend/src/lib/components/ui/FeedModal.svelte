@@ -179,8 +179,8 @@
     </FormField>
 
     {#if Object.keys(paramsSchema).length > 0}
-        <div class="params-section">
-            <p class="section-title">Params</p>
+        <div class="schema-section">
+            <p class="schema-section-title">Params</p>
             {#each Object.entries(paramsSchema) as [key, hint]}
                 <FormField id="param-{key}" label={key} hint={String(hint)}>
                     {#if key === 'external_ids'}
@@ -251,23 +251,5 @@
         font-size: 0.8rem;
         font-weight: 500;
         color: var(--text-secondary);
-    }
-
-    .params-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--bg-secondary);
-    }
-
-    .section-title {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
     }
 </style>

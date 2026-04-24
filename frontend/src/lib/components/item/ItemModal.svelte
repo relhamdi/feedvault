@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { itemsApi } from '../../api/items.js';
     import { MEDIA_URL } from '../../config.js';
     import { pollJob } from '../../stores/scraping.js';
@@ -172,14 +172,14 @@
 
                 {#if item.summary}
                     <div class="modal-section">
-                        <h4 class="section-title">Summary</h4>
+                        <h4 class="schema-section-title">Summary</h4>
                         <div class="modal-text">{@html parseBBCode(item.summary)}</div>
                     </div>
                 {/if}
 
                 {#if item.description && item.description !== item.summary}
                     <div class="modal-section">
-                        <h4 class="section-title">Description</h4>
+                        <h4 class="schema-section-title">Description</h4>
                         <div class="modal-text">{@html parseBBCode(item.description)}</div>
                     </div>
                 {/if}
@@ -242,7 +242,7 @@
                 <!-- Stats -->
                 {#if item.stats && Object.keys(item.stats).length > 0}
                     <div class="modal-section stats-section">
-                        <h4 class="section-title">Stats</h4>
+                        <h4 class="schema-section-title">Stats</h4>
                         <div class="stats-grid">
                             {#each Object.entries(item.stats) as [key, value]}
                                 <div class="stat-item">
@@ -257,7 +257,7 @@
                 <!-- Info / meta fields -->
                 {#if item.meta && Object.keys(item.meta).length > 0}
                     <div class="modal-section">
-                        <h4 class="section-title">Info</h4>
+                        <h4 class="schema-section-title">Info</h4>
                         <div class="meta-fields">
                             {#each Object.entries(item.meta).sort( ([a], [b]) => a.localeCompare(b) ) as [key, value]}
                                 {#if value !== null && value !== undefined}
@@ -274,7 +274,7 @@
                 <!-- Categories -->
                 {#if item.categories?.length > 0}
                     <div class="modal-section">
-                        <h4 class="section-title">Categories</h4>
+                        <h4 class="schema-section-title">Categories</h4>
                         <div class="tags-list">
                             {#each item.categories as cat}
                                 <span class="tag category">{cat.name}</span>
@@ -286,7 +286,7 @@
                 <!-- Tags -->
                 {#if item.tags?.length > 0}
                     <div class="modal-section">
-                        <h4 class="section-title">Tags</h4>
+                        <h4 class="schema-section-title">Tags</h4>
                         <div class="tags-list">
                             {#each item.tags as tag}
                                 <span class="tag">{tag}</span>
@@ -302,7 +302,7 @@
             <div class="modal-footer">
                 {#each Object.entries(mediaByType) as [type, medias]}
                     <div class="footer-section">
-                        <h4 class="section-title">{type}s</h4>
+                        <h4 class="schema-section-title">{type}s</h4>
                         {#if type === 'image'}
                             <div class="media-images">
                                 {#each medias as media}
@@ -594,16 +594,8 @@
         gap: 0.5rem;
     }
 
-    .section-title {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-muted);
-        font-weight: 600;
-    }
-
     /* Stats */
-    .stats-section .section-title {
+    .stats-section .schema-section-title {
         text-align: center;
     }
 

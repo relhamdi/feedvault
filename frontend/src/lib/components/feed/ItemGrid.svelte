@@ -1,4 +1,5 @@
 <script>
+    import { onDestroy } from 'svelte';
     import { itemsApi } from '../../api/items.js';
     import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';

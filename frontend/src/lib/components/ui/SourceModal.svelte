@@ -173,8 +173,8 @@
 
     <!-- Credentials — create mode only, shown if schema available -->
     {#if !isEdit && Object.keys(credentialsSchema).length > 0}
-        <div class="credentials-section">
-            <p class="section-title">Credentials</p>
+        <div class="schema-section">
+            <p class="schema-section-title">Credentials</p>
             {#each Object.entries(credentialsSchema) as [key, hint]}
                 <FormField id="cred-{key}" label={key} hint={String(hint)}>
                     <input
@@ -190,9 +190,9 @@
 
     <!-- Credentials — edit mode -->
     {#if isEdit}
-        <div class="credentials-section">
-            <p class="section-title">Credentials</p>
-            <p class="section-hint">
+        <div class="schema-section">
+            <p class="schema-section-title">Credentials</p>
+            <p class="schema-section-hint">
                 To update credentials, enter new values below. Leave empty to keep existing.
             </p>
             {#each Object.entries(credentialsValues) as [key, _]}
@@ -201,7 +201,7 @@
                 </FormField>
             {/each}
             {#if Object.keys(credentialsValues).length === 0}
-                <p class="section-hint">No credentials schema available for this source.</p>
+                <p class="schema-section-hint">No credentials schema available for this source.</p>
             {/if}
         </div>
     {/if}
@@ -233,28 +233,5 @@
         font-size: 0.8rem;
         font-weight: 500;
         color: var(--text-secondary);
-    }
-
-    .credentials-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--bg-secondary);
-    }
-
-    .section-title {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-    }
-
-    .section-hint {
-        font-size: 0.75rem;
-        color: var(--text-muted);
     }
 </style>
