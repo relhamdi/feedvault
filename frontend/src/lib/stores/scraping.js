@@ -10,6 +10,14 @@ export function setPollInterval(val) {
     localStorage.setItem('pollInterval', String(val));
 }
 
+export function getDefaultScrapeMode() {
+    return localStorage.getItem('defaultScrapeMode') ?? 'INCREMENTAL';
+}
+
+export function setDefaultScrapeMode(mode) {
+    localStorage.setItem('defaultScrapeMode', mode);
+}
+
 /**
  * Poll a scrape job until completion.
  * @param {int} jobId Job ID

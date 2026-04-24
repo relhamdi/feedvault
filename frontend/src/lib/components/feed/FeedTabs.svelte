@@ -125,7 +125,7 @@
         scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
 
         try {
-            const job = await scrapeApi.scrape({ feed_id: feedId, mode: 'INCREMENTAL' });
+            const job = await scrapeApi.scrape({ feed_id: feedId, mode: getDefaultScrapeMode() });
             const cleanup = pollJob(job.id, {
                 onDone: (job) => {
                     scrapingFeedIds.delete(feedId);
