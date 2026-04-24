@@ -13,6 +13,7 @@ export const sourcesApi = {
     update: (id, data) => api.patch(`/sources/${id}`, data),
     delete: (id) => api.delete(`/sources/${id}`),
     updateCredentials: (id, data) => api.put(`/sources/${id}/credentials`, data),
+    registeredSlugs: () => api.get('/sources/registered-slugs'),
     bootstrap: (slug) => api.post(`/sources/bootstrap/${slug}`),
     bootstrapAll: () => api.post('/sources/bootstrap'),
     credentialsSchema: (slug) => api.get(`/sources/bootstrap/${slug}/credentials-schema`),
