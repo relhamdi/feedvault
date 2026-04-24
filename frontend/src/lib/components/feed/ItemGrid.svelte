@@ -1,5 +1,6 @@
 <script>
     import { itemsApi } from '../../api/items.js';
+    import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
     import {
         feedRefreshTrigger,
@@ -7,7 +8,7 @@
         selectedSourceId,
     } from '../../stores/navigation.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
-    import { toastError } from '../../stores/toast.js';
+    import { toastError, toastInfo } from '../../stores/toast.js';
     import ItemModal from '../item/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ItemCard from './ItemCard.svelte';
@@ -119,6 +120,45 @@
             toastError(`Failed to update item: ${e.message}`);
         }
     }
+
+    async function refreshItem(item) {
+        try {
+            const job = await scrapeApi.scrape({
+                feed_id: $selectedFeedId,
+                mode: 'FULL',
+                external_ids: [item.external_id],
+            });
+            toastInfo(`Refreshing item "${item.title}"...`);
+            pollRefreshJob(job.id, item);
+        } catch (e) {
+            toastError(`Refresh failed: ${e.message}`);
+        }
+    }
+
+    function pollRefreshJob(jobId, item) {
+        const interval = setInterval(async () => {
+            try {
+                const job = await scrapeApi.getJob(jobId);
+                if (job.status === 'done' || job.status === 'error') {
+                    clearInterval(interval);
+                    if (job.status === 'error') {
+                        toastError(`Scrape error: ${job.error_message}`);
+                    } else {
+                        toastSuccess(`Item "${item.title}" refreshed`);
+                        // Reload item from API
+                        const updated = await itemsApi.get(item.id);
+                        items = items.map((i) => (i.id === updated.id ? updated : i));
+                    }
+                }
+            } catch (e) {
+                console.warn(
+                    `Error during pollJob for item ${item.id} and job ${jobId}:`,
+                    e.message
+                );
+                clearInterval(interval);
+            }
+        }, 2000);
+    }
 </script>
 
 {#if $selectedFeedId}
@@ -176,6 +216,16 @@
                 icon: contextMenu.item.is_favorite ? '♥' : '♡',
                 action: () => toggleFavorite(contextMenu.item),
             },
+            ...(currentParamsSchema && 'external_ids' in currentParamsSchema
+                ? [
+                      { separator: true },
+                      {
+                          label: 'Refresh item',
+                          icon: '⟳',
+                          action: () => refreshItem(contextMenu.item),
+                      },
+                  ]
+                : []),
         ]}
         onClose={() => (contextMenu = null)}
     />
