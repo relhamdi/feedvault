@@ -137,7 +137,7 @@
         <input id="source-url" type="url" bind:value={form.base_url} placeholder="https://.../v1" />
     </FormField>
 
-    <div class="row">
+    <div class="form-row">
         <FormField id="source-color" label="Color">
             <input id="source-color" type="color" bind:value={form.color} />
         </FormField>
@@ -202,21 +202,6 @@
 </FormModal>
 
 <style>
-    .form-error {
-        font-size: 0.875rem;
-        color: var(--danger);
-        padding: 0.5rem 0.75rem;
-        background: color-mix(in srgb, var(--danger) 10%, transparent);
-        border-radius: var(--radius);
-    }
-
-    .row {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.75rem;
-        align-items: end;
-    }
-
     .toggle-row {
         display: flex;
         align-items: center;
