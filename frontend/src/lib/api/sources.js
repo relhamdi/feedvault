@@ -15,7 +15,6 @@ export const sourcesApi = {
     updateCredentials: (id, data) => api.put(`/sources/${id}/credentials`, data),
     registeredSlugs: () => api.get('/sources/registered-slugs'),
     bootstrap: (slug) => api.post(`/sources/bootstrap/${slug}`),
-    bootstrapAll: () => api.post('/sources/bootstrap'),
     credentialsSchema: (slug) => api.get(`/sources/bootstrap/${slug}/credentials-schema`),
     paramsSchema: (slug) => api.get(`/sources/bootstrap/${slug}/params-schema`),
 };
