@@ -1,10 +1,12 @@
 import { scrapeApi } from '../api/scrape.js';
 
+export const DEFAULT_POLL_INTERVAL = 2000;
+
 /**
  * Retrieve poll interval from localStorage for the settings
  */
 export function getPollInterval() {
-    return parseInt(localStorage.getItem('pollInterval') ?? '2000');
+    return parseInt(localStorage.getItem('pollInterval') ?? DEFAULT_POLL_INTERVAL);
 }
 
 /**
