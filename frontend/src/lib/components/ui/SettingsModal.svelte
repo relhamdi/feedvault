@@ -3,7 +3,12 @@
     import { rootApi } from '../../api/client.js';
     import { sourcesApi } from '../../api/sources.js';
     import { triggerSourceRefresh } from '../../stores/navigation.js';
-    import { getPollInterval, setPollInterval } from '../../stores/scraping.js';
+    import {
+        getDefaultScrapeMode,
+        getPollInterval,
+        setDefaultScrapeMode,
+        setPollInterval,
+    } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import ThemeToggle from './ThemeToggle.svelte';
@@ -27,6 +32,7 @@
 
     // Persisted in localStorage
     let pollInterval = getPollInterval();
+    let defaultScrapeMode = getDefaultScrapeMode();
 
     $: existingSlugs = new Set(existingSources.map((s) => s.slug));
     $: availableSlugs = registeredSlugs.filter((slug) => !existingSlugs.has(slug));
@@ -96,8 +102,13 @@
     function savePollInterval() {
         const val = Math.max(500, Math.min(10000, pollInterval));
         pollInterval = val;
-        setPollInterval(val);
+        setPollInterval(pollInterval);
         toastSuccess('Polling interval saved.');
+    }
+
+    function saveScrapeMode() {
+        setDefaultScrapeMode(defaultScrapeMode);
+        toastSuccess('Default scrape mode saved.');
     }
 </script>
 
@@ -246,6 +257,21 @@
                             class="poll-input"
                         />
                         <button class="btn-save" on:click={savePollInterval}>Save</button>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <div class="settings-label-group">
+                        <span class="settings-label">Default scrape mode</span>
+                        <span class="settings-hint"
+                            >Used when launching a scrape from the feed tabs</span
+                        >
+                    </div>
+                    <div class="mode-select-row">
+                        <select bind:value={defaultScrapeMode} on:change={saveScrapeMode}>
+                            <option value="INCREMENTAL">Incremental</option>
+                            <option value="FULL">Full</option>
+                        </select>
                     </div>
                 </div>
             </section>
