@@ -1,8 +1,8 @@
 <script>
     import { onMount } from 'svelte';
     import { itemsApi } from '../../api/items.js';
-    import { scrapeApi } from '../../api/scrape.js';
     import { MEDIA_URL } from '../../config.js';
+    import { pollJob } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
 
@@ -15,6 +15,7 @@
     let mouseDownOnBackdrop = false;
 
     let scraping = false;
+    let cleanupPoll = null;
 
     $: supportsScrapeById = 'external_ids' in paramsSchema;
 
@@ -38,45 +39,31 @@
         }
     });
 
+    onDestroy(() => cleanupPoll?.());
+
     async function scrapeItem() {
         if (scraping) return;
         scraping = true;
         try {
             const job = await itemsApi.scrapeItem(feedId, item.external_id);
-            pollScrapeJob(job.id);
+            cleanupPoll = pollJob(job.id, {
+                onDone: async () => {
+                    scraping = false;
+                    toastSuccess('Item refreshed');
+                    const updated = await itemsApi.get(item.id);
+                    item = updated;
+                    onUpdate?.(updated);
+                },
+                onError: (msg) => {
+                    scraping = false;
+                    toastError(`Refresh error: ${msg}`);
+                },
+            });
         } catch (e) {
             scraping = false;
             console.error('Scrape failed:', e.message);
             toastError(`Scrape failed: ${e.message}`);
         }
-    }
-
-    function pollScrapeJob(jobId) {
-        const interval = setInterval(async () => {
-            try {
-                const job = await scrapeApi.getJob(jobId);
-                if (job.status === 'done' || job.status === 'error') {
-                    clearInterval(interval);
-                    scraping = false;
-                    if (job.status === 'error') {
-                        toastError(`Scrape error: ${job.error_message}`);
-                    } else {
-                        toastSuccess('Item refreshed');
-                        // Reload item from API
-                        const updated = await itemsApi.get(item.id);
-                        item = updated;
-                        onUpdate?.(updated);
-                    }
-                }
-            } catch (e) {
-                console.warn(
-                    `Error during pollJob for item ${item.id} and job ${jobId}:`,
-                    e.message
-                );
-                clearInterval(interval);
-                scraping = false;
-            }
-        }, 2000);
     }
 
     async function toggleFavorite() {

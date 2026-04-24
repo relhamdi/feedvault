@@ -7,6 +7,7 @@
         selectedFeedId,
         selectedSourceId,
     } from '../../stores/navigation.js';
+    import { pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastInfo } from '../../stores/toast.js';
     import ItemModal from '../item/ItemModal.svelte';
@@ -27,10 +28,16 @@
     // Loaded schema for item modal
     let currentParamsSchema = {};
 
+    // Scraping
+    let refreshingItemIds = new Set();
+    const cleanups = [];
+
     $: if ($selectedFeedId) loadParamsSchema();
 
     // Reload items whenever selected feed changes
     $: if ($selectedFeedId || $feedRefreshTrigger) resetAndLoad($selectedFeedId);
+
+    onDestroy(() => cleanups.forEach((fn) => fn()));
 
     async function loadParamsSchema() {
         try {
@@ -122,6 +129,9 @@
     }
 
     async function refreshItem(item) {
+        if (refreshingItemIds.has(item.id)) return;
+        refreshingItemIds.add(item.id);
+        refreshingItemIds = refreshingItemIds;
         try {
             const job = await scrapeApi.scrape({
                 feed_id: $selectedFeedId,
@@ -129,35 +139,27 @@
                 external_ids: [item.external_id],
             });
             toastInfo(`Refreshing item "${item.title}"...`);
-            pollRefreshJob(job.id, item);
+            const cleanup = pollJob(job.id, {
+                onDone: async () => {
+                    refreshingItemIds.delete(item.id);
+                    refreshingItemIds = refreshingItemIds;
+                    toastSuccess(`"${item.title}" refreshed`);
+                    const updated = await itemsApi.get(item.id);
+                    items = items.map((i) => (i.id === updated.id ? updated : i));
+                },
+                onError: (msg) => {
+                    refreshingItemIds.delete(item.id);
+                    refreshingItemIds = refreshingItemIds;
+                    toastError(`Refresh error: ${msg}`);
+                },
+            });
+            cleanups.push(cleanup);
         } catch (e) {
+            refreshingItemIds.delete(item.id);
+            refreshingItemIds = refreshingItemIds;
+            console.error('Refresh failed:', e.message);
             toastError(`Refresh failed: ${e.message}`);
         }
-    }
-
-    function pollRefreshJob(jobId, item) {
-        const interval = setInterval(async () => {
-            try {
-                const job = await scrapeApi.getJob(jobId);
-                if (job.status === 'done' || job.status === 'error') {
-                    clearInterval(interval);
-                    if (job.status === 'error') {
-                        toastError(`Scrape error: ${job.error_message}`);
-                    } else {
-                        toastSuccess(`Item "${item.title}" refreshed`);
-                        // Reload item from API
-                        const updated = await itemsApi.get(item.id);
-                        items = items.map((i) => (i.id === updated.id ? updated : i));
-                    }
-                }
-            } catch (e) {
-                console.warn(
-                    `Error during pollJob for item ${item.id} and job ${jobId}:`,
-                    e.message
-                );
-                clearInterval(interval);
-            }
-        }, 2000);
     }
 </script>
 

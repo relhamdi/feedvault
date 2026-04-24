@@ -8,6 +8,7 @@
         selectedSourceId,
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
+    import { pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import ConfirmModal from '../ui/ConfirmModal.svelte';
@@ -32,7 +33,7 @@
 
     // Scraping
     let scrapingFeedIds = new Set();
-    let pollingIntervals = {};
+    const cleanups = [];
 
     let currentSource = null;
     // Reload feeds whenever selected source changes
@@ -40,6 +41,8 @@
         loadSource($selectedSourceId);
         loadFeeds($selectedSourceId);
     }
+
+    onDestroy(() => cleanups.forEach((fn) => fn()));
 
     async function loadSource(sourceId) {
         try {
@@ -120,9 +123,25 @@
         if (scrapingFeedIds.has(feedId)) return;
         scrapingFeedIds.add(feedId);
         scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
+
         try {
             const job = await scrapeApi.scrape({ feed_id: feedId, mode: 'INCREMENTAL' });
-            pollJob(job.id, feedId);
+            const cleanup = pollJob(job.id, {
+                onDone: (job) => {
+                    scrapingFeedIds.delete(feedId);
+                    scrapingFeedIds = scrapingFeedIds;
+                    toastSuccess(`Scrape complete — ${job.items_upserted} items`);
+                    if (feedId === $selectedFeedId) triggerFeedRefresh();
+                    refreshFeedStats(feedId);
+                    refreshSourceStats($selectedSourceId);
+                },
+                onError: (msg) => {
+                    scrapingFeedIds.delete(feedId);
+                    scrapingFeedIds = scrapingFeedIds;
+                    toastError(`Scrape error: ${msg}`);
+                },
+            });
+            cleanups.push(cleanup);
         } catch (e) {
             scrapingFeedIds.delete(feedId);
             scrapingFeedIds = scrapingFeedIds;
@@ -130,45 +149,6 @@
             toastError(`Scrape failed: ${e.message}`);
         }
     }
-
-    function pollJob(jobId, feedId) {
-        pollingIntervals[feedId] = setInterval(async () => {
-            try {
-                const job = await scrapeApi.getJob(jobId);
-                if (job.status === 'done' || job.status === 'error') {
-                    clearInterval(pollingIntervals[feedId]);
-                    delete pollingIntervals[feedId];
-                    scrapingFeedIds.delete(feedId);
-                    scrapingFeedIds = scrapingFeedIds;
-
-                    if (job.status === 'error') {
-                        console.error('Scrape error:', job.error_message);
-                        toastError(`Scrape error: ${job.error_message}`);
-                    }
-                    // Reload items if the completed feed is the selected one
-                    if (job.status === 'done' && feedId === $selectedFeedId) {
-                        toastSuccess(`Scrape complete — ${job.items_upserted} items`);
-                        triggerFeedRefresh();
-                    }
-                    refreshFeedStats(feedId);
-                    refreshSourceStats($selectedSourceId);
-                }
-            } catch (e) {
-                console.warn(
-                    `Error during feed pollJob for feed ${feedId} and job ${jobId}:`,
-                    e.message
-                );
-                clearInterval(pollingIntervals[feedId]);
-                delete pollingIntervals[feedId];
-                scrapingFeedIds.delete(feedId);
-                scrapingFeedIds = scrapingFeedIds;
-            }
-        }, 2000);
-    }
-
-    onDestroy(() => {
-        Object.values(pollingIntervals).forEach(clearInterval);
-    });
 </script>
 
 {#if $selectedSourceId}
