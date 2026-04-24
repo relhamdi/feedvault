@@ -1,4 +1,4 @@
-import { API_URL } from '../config.js';
+import { API_BASE_URL, API_URL } from '../config.js';
 
 /**
  * Base fetch wrapper. Throws on non-2xx responses.
@@ -16,6 +16,11 @@ async function request(path, options = {}) {
 
     return response.status === 204 ? null : response.json();
 }
+
+export const rootApi = {
+    health: () => fetch(`${API_BASE_URL}/health`).then((r) => r.json()),
+    stats: () => fetch(`${API_BASE_URL}/stats`).then((r) => r.json()),
+};
 
 export const api = {
     get: (path) => request(path),
