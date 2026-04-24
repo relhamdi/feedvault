@@ -1,4 +1,6 @@
 <script>
+    import { createBackdropHandlers } from '../../utils/modal.js';
+
     export let title = 'Confirm';
     export let message = 'Are you sure?';
     export let confirmLabel = 'Delete';
@@ -7,18 +9,7 @@
 
     let mouseDownOnBackdrop = false;
 
-    function handleMouseDown(e) {
-        mouseDownOnBackdrop = e.target === e.currentTarget;
-    }
-
-    function handleBackdropClick(e) {
-        if (mouseDownOnBackdrop && e.target === e.currentTarget) onClose();
-        mouseDownOnBackdrop = false;
-    }
-
-    function handleKeydown(e) {
-        if (e.key === 'Escape') onClose();
-    }
+    const { handleMouseDown, handleClick, handleKeydown } = createBackdropHandlers(onClose);
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -26,7 +17,7 @@
 <div
     class="backdrop"
     on:mousedown={handleMouseDown}
-    on:click={handleBackdropClick}
+    on:click={handleClick}
     on:keydown={handleKeydown}
     role="button"
     tabindex="-1"

@@ -5,6 +5,7 @@
     import { pollJob } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
+    import { createBackdropHandlers } from '../../utils/modal.js';
     import Badge from '../ui/Badge.svelte';
 
     export let item;
@@ -81,25 +82,14 @@
         onUpdate?.(updated);
     }
 
-    function handleBackdropKeydown(e) {
-        if (e.key === 'Escape') onClose();
-    }
-
-    function handleMouseDown(e) {
-        mouseDownOnBackdrop = e.target === e.currentTarget;
-    }
-
-    function handleBackdropClick(e) {
-        if (mouseDownOnBackdrop && e.target === e.currentTarget) onClose();
-        mouseDownOnBackdrop = false;
-    }
-
     function handleImgError(e) {
         // If remote failed, fall back to local
         if (thumbnailSrc === remoteSrc && localSrc) {
             thumbnailSrc = localSrc;
         }
     }
+
+    const { handleMouseDown, handleClick, handleKeydown } = createBackdropHandlers(onClose);
 </script>
 
 <svelte:window on:keydown={handleBackdropKeydown} />
@@ -107,8 +97,8 @@
 <div
     class="modal-backdrop"
     on:mousedown={handleMouseDown}
-    on:click={handleBackdropClick}
-    on:keydown={handleBackdropKeydown}
+    on:click={handleClick}
+    on:keydown={handleKeydown}
     role="button"
     tabindex="0"
     aria-label="Close modal"
