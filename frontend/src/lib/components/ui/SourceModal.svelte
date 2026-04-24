@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
+    import { parseTags } from '../../utils/format.js';
     import FormField from '../ui/FormField.svelte';
     import FormModal from '../ui/FormModal.svelte';
 
@@ -56,13 +57,6 @@
             credentialsSchema = {};
             credentialsValues = {};
         }
-    }
-
-    function parseTags(str) {
-        return str
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean);
     }
 
     async function handleSubmit() {

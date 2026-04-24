@@ -2,6 +2,7 @@
     import { feedsApi } from '../../api/feeds.js';
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
+    import { parseTags } from '../../utils/format.js';
     import FormField from './FormField.svelte';
     import FormModal from './FormModal.svelte';
 
@@ -29,13 +30,6 @@
     };
 
     let paramsError = null;
-
-    function parseTags(str) {
-        return str
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean);
-    }
 
     function validateParams() {
         try {

@@ -11,6 +11,17 @@ export function formatDate(dateStr) {
 }
 
 /**
+ * Parse a comma-separated string of tags into a clean array.
+ */
+export function parseTags(str) {
+    if (!str) return [];
+    return str
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+}
+
+/**
  * Parse basic BBCode tags to HTML.
  * Supported: [b], [i], [u], [s], [color=x], [size=x], [url=x], [url]
  */
