@@ -2,6 +2,7 @@
     import { createEventDispatcher } from 'svelte';
     import { MEDIA_URL } from '../../config.js';
     import { formatDate } from '../../utils/format.js';
+    import Badge from '../ui/Badge.svelte';
 
     export let item;
 
@@ -35,13 +36,13 @@
             <!-- Badges overlay -->
             <div class="card-badges">
                 {#if item.is_nsfw}
-                    <span class="badge nsfw">NSFW</span>
+                    <Badge type="nsfw" label="NSFW" />
                 {/if}
                 {#if !item.is_public}
-                    <span class="badge unlisted">unlisted</span>
+                    <Badge type="unlisted" label="unlisted" />
                 {/if}
                 {#if item.is_favorite}
-                    <span class="badge favorite">♥</span>
+                    <Badge type="favorite" label="♥" />
                 {/if}
             </div>
         </div>
@@ -146,31 +147,6 @@
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
-    }
-
-    .badge {
-        font-size: 0.65rem;
-        font-weight: 700;
-        padding: 0.15rem 0.35rem;
-        border-radius: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        text-align: center;
-    }
-
-    .badge.nsfw {
-        background: var(--danger);
-        color: white;
-    }
-
-    .badge.unlisted {
-        background: var(--text-muted);
-        color: white;
-    }
-
-    .badge.favorite {
-        background: #e8b84b;
-        color: white;
     }
 
     /* Content */

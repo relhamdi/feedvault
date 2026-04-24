@@ -5,6 +5,7 @@
     import { pollJob } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
+    import Badge from '../ui/Badge.svelte';
 
     export let item;
     export let feedId;
@@ -192,10 +193,10 @@
                     <h2 class="modal-title">{item.title}</h2>
                     <div class="modal-badges">
                         {#if item.is_nsfw}
-                            <span class="badge nsfw">NSFW</span>
+                            <Badge type="nsfw" label="NSFW" />
                         {/if}
                         {#if !item.is_public}
-                            <span class="badge unlisted">unlisted</span>
+                            <Badge type="unlisted" label="unlisted" />
                         {/if}
                     </div>
                 </div>
@@ -502,24 +503,6 @@
         flex-direction: column;
         gap: 0.25rem;
         flex-shrink: 0;
-    }
-
-    .badge {
-        font-size: 0.65rem;
-        font-weight: 700;
-        padding: 0.15rem 0.35rem;
-        border-radius: 4px;
-        text-transform: uppercase;
-        text-align: center;
-    }
-
-    .badge.nsfw {
-        background: var(--danger);
-        color: white;
-    }
-    .badge.unlisted {
-        background: var(--text-muted);
-        color: white;
     }
 
     /* Meta */
