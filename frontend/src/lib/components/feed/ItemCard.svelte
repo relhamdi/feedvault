@@ -1,12 +1,26 @@
 <script>
-    import { MEDIA_BASE_URL } from '../../api/items.js';
+    import { createEventDispatcher } from 'svelte';
+    import { MEDIA_URL } from '../../config.js';
     import { formatDate } from '../../utils/format.js';
+
     export let item;
 
-    $: thumbnailSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
+    const dispatch = createEventDispatcher();
+
+    $: thumbnailSrc = item.thumbnail_path
+        ? `${MEDIA_URL}/${item.thumbnail_path}`
+        : (item.thumbnail_url ?? null);
 </script>
 
-<article class="item-card" class:unread={!item.is_read} class:nsfw={item.is_nsfw}>
+<article
+    class="item-card"
+    class:unread={!item.is_read}
+    class:nsfw={item.is_nsfw}
+    on:contextmenu={(e) => {
+        e.preventDefault();
+        dispatch('contextmenu', e);
+    }}
+>
     <button class="card-btn" on:click>
         <!-- Thumbnail -->
         <div class="card-thumbnail">
@@ -142,7 +156,7 @@
         text-transform: uppercase;
         letter-spacing: 0.04em;
         text-align: center;
-}
+    }
 
     .badge.nsfw {
         background: var(--danger);

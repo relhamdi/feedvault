@@ -1,13 +1,26 @@
 <script>
     import { onMount } from 'svelte';
-    import { itemsApi, MEDIA_BASE_URL } from '../../api/items.js';
+    import { itemsApi } from '../../api/items.js';
+    import { scrapeApi } from '../../api/scrape.js';
+    import { MEDIA_URL } from '../../config.js';
+    import { toastError, toastSuccess } from '../../stores/toast.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
 
     export let item;
+    export let feedId;
+    export let paramsSchema = {}; // passed from ItemGrid
     export let onClose;
     export let onUpdate;
 
-    $: thumbnailSrc = item.thumbnail_path ? `${MEDIA_BASE_URL}/media/${item.thumbnail_path}` : null;
+    let mouseDownOnBackdrop = false;
+
+    let scraping = false;
+
+    $: supportsScrapeById = 'external_ids' in paramsSchema;
+
+    $: remoteSrc = item.thumbnail_url ?? null;
+    $: localSrc = item.thumbnail_path ? `${MEDIA_URL}/${item.thumbnail_path}` : null;
+    $: thumbnailSrc = remoteSrc || localSrc;
 
     $: mediaByType =
         item.media?.reduce((acc, m) => {
@@ -24,6 +37,47 @@
             onUpdate?.(updated);
         }
     });
+
+    async function scrapeItem() {
+        if (scraping) return;
+        scraping = true;
+        try {
+            const job = await itemsApi.scrapeItem(feedId, item.external_id);
+            pollScrapeJob(job.id);
+        } catch (e) {
+            scraping = false;
+            console.error('Scrape failed:', e.message);
+            toastError(`Scrape failed: ${e.message}`);
+        }
+    }
+
+    function pollScrapeJob(jobId) {
+        const interval = setInterval(async () => {
+            try {
+                const job = await scrapeApi.getJob(jobId);
+                if (job.status === 'done' || job.status === 'error') {
+                    clearInterval(interval);
+                    scraping = false;
+                    if (job.status === 'error') {
+                        toastError(`Scrape error: ${job.error_message}`);
+                    } else {
+                        toastSuccess('Item refreshed');
+                        // Reload item from API
+                        const updated = await itemsApi.get(item.id);
+                        item = updated;
+                        onUpdate?.(updated);
+                    }
+                }
+            } catch (e) {
+                console.warn(
+                    `Error during pollJob for item ${item.id} and job ${jobId}:`,
+                    e.message
+                );
+                clearInterval(interval);
+                scraping = false;
+            }
+        }, 2000);
+    }
 
     async function toggleFavorite() {
         const updated = { ...item, is_favorite: !item.is_favorite };
@@ -43,8 +97,20 @@
         if (e.key === 'Escape') onClose();
     }
 
+    function handleMouseDown(e) {
+        mouseDownOnBackdrop = e.target === e.currentTarget;
+    }
+
     function handleBackdropClick(e) {
-        if (e.target === e.currentTarget) onClose();
+        if (mouseDownOnBackdrop && e.target === e.currentTarget) onClose();
+        mouseDownOnBackdrop = false;
+    }
+
+    function handleImgError(e) {
+        // If remote failed, fall back to local
+        if (thumbnailSrc === remoteSrc && localSrc) {
+            thumbnailSrc = localSrc;
+        }
     }
 </script>
 
@@ -52,6 +118,7 @@
 
 <div
     class="modal-backdrop"
+    on:mousedown={handleMouseDown}
     on:click={handleBackdropClick}
     on:keydown={handleBackdropKeydown}
     role="button"
@@ -88,6 +155,17 @@
                         ↗ source
                     </a>
                 {/if}
+                {#if supportsScrapeById}
+                    <button
+                        class="action-btn"
+                        class:spinning={scraping}
+                        disabled={scraping}
+                        on:click={scrapeItem}
+                        title={scraping ? 'Refreshing...' : 'Refresh this item'}
+                    >
+                        ⟳
+                    </button>
+                {/if}
             </div>
             <button class="close-btn" on:click={onClose} title="Close">✕</button>
         </div>
@@ -97,7 +175,12 @@
             <!-- Left column -->
             <div class="col-left">
                 {#if thumbnailSrc}
-                    <img class="modal-thumbnail" src={thumbnailSrc} alt={item.title} />
+                    <img
+                        class="modal-thumbnail"
+                        src={thumbnailSrc}
+                        alt={item.title}
+                        on:error={handleImgError}
+                    />
                 {/if}
 
                 {#if item.summary}
@@ -340,6 +423,21 @@
 
     .action-btn.active {
         color: #e8b84b;
+    }
+
+    .action-btn.spinning {
+        animation: spin 1s linear infinite;
+        pointer-events: none;
+        color: var(--accent);
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .close-btn {

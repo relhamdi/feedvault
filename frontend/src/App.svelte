@@ -3,6 +3,7 @@
     import FeedTabs from './lib/components/feed/FeedTabs.svelte';
     import ItemGrid from './lib/components/feed/ItemGrid.svelte';
     import Sidebar from './lib/components/sidebar/Sidebar.svelte';
+    import ToastContainer from './lib/components/ui/ToastContainer.svelte';
     import { theme } from './lib/stores/theme.js';
 
     onMount(() => {
@@ -21,6 +22,8 @@
             <ItemGrid />
         </div>
     </main>
+
+    <ToastContainer />
 </div>
 
 <style>

@@ -1,13 +1,27 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, onMount } from 'svelte';
+    import { refreshSourceStats, sourceStats } from '../../stores/stats.js';
 
     export let source;
     export let active = false;
 
     const dispatch = createEventDispatcher();
+
+    onMount(() => refreshSourceStats(source.id));
+
+    $: stats = $sourceStats[source.id] ?? null;
 </script>
 
-<button class="source-item" class:active on:click={() => dispatch('select')} title={source.name}>
+<button
+    class="source-item"
+    class:active
+    on:click={() => dispatch('select')}
+    on:contextmenu={(e) => {
+        e.preventDefault();
+        dispatch('contextmenu', e);
+    }}
+    title={source.name}
+>
     <div class="source-icon" style="background: {source.color || 'var(--bg-tertiary)'}">
         {#if source.icon_path}
             <img src={source.icon_path} alt={source.name} />
@@ -25,8 +39,14 @@
         {#if !source.is_active}
             <span class="badge inactive" title="Inactive">●</span>
         {/if}
-        <!-- Unread count badge — wired later -->
-        <span class="unread-badge">0</span>
+
+        {#if stats !== null}
+            <span class="unread-badge" class:zero={stats.unread === 0}>
+                {stats.unread}
+            </span>
+        {:else}
+            <span class="unread-badge zero">–</span>
+        {/if}
     </div>
 </button>
 
@@ -114,5 +134,11 @@
         border-radius: 99px;
         min-width: 18px;
         text-align: center;
+        transition: background var(--transition);
+    }
+
+    .unread-badge.zero {
+        background: var(--bg-tertiary);
+        color: var(--text-muted);
     }
 </style>
