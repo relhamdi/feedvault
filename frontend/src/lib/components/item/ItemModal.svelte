@@ -92,7 +92,7 @@
     const { handleMouseDown, handleClick, handleKeydown } = createBackdropHandlers(onClose);
 </script>
 
-<svelte:window on:keydown={handleBackdropKeydown} />
+<svelte:window on:keydown={handleKeydown} />
 
 <div
     class="modal-backdrop"
