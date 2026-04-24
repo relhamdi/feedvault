@@ -135,7 +135,7 @@
             <!-- Health -->
             <section class="settings-section">
                 <div class="settings-section-header">
-                    <h4 class="settings-section-title">API Health</h4>
+                    <h4 class="settings-section-title">API</h4>
                     <button class="btn-check" on:click={checkHealth} disabled={checkingHealth}>
                         {checkingHealth ? 'Checking...' : 'Check now'}
                     </button>
@@ -187,8 +187,6 @@
                     </div>
                 {/if}
             </section>
-
-            <div class="settings-divider"></div>
 
             <!-- Sources -->
             <section class="settings-section">
