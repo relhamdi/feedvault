@@ -8,7 +8,7 @@
         selectedSourceId,
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
-    import { pollJob } from '../../stores/scraping.js';
+    import { getDefaultScrapeMode, pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import ConfirmModal from '../ui/ConfirmModal.svelte';
