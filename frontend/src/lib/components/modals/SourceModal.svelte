@@ -4,8 +4,8 @@
     import { toastError } from '../../stores/toast.js';
     import { parseTags } from '../../utils/format.js';
     import FormField from '../ui/FormField.svelte';
-    import FormModal from '../ui/FormModal.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
+    import FormModal from './FormModal.svelte';
 
     export let source = null; // null = create mode
     export let onClose;

@@ -3,8 +3,8 @@
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
     import { parseTags } from '../../utils/format.js';
+    import FormField from '../ui/FormField.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
-    import FormField from './FormField.svelte';
     import FormModal from './FormModal.svelte';
 
     export let feed = null; // null = create mode

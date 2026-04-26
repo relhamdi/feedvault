@@ -5,8 +5,8 @@
     import { sourcesApi } from '../../api/sources.js';
     import { getPollInterval } from '../../stores/scraping.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
-    import JobRow from './JobRow.svelte';
-    import MultiSelect from './MultiSelect.svelte';
+    import JobRow from '../log/JobRow.svelte';
+    import MultiSelect from '../ui/MultiSelect.svelte';
 
     export let onClose;
 

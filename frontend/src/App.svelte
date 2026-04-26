@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import FeedTabs from './lib/components/feed/FeedTabs.svelte';
-    import ItemGrid from './lib/components/feed/ItemGrid.svelte';
+    import ItemGrid from './lib/components/item/ItemGrid.svelte';
     import Sidebar from './lib/components/sidebar/Sidebar.svelte';
     import ToastContainer from './lib/components/ui/ToastContainer.svelte';
     import { theme } from './lib/stores/theme.js';

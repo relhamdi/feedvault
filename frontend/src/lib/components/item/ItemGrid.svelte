@@ -11,7 +11,7 @@
     import { pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastInfo } from '../../stores/toast.js';
-    import ItemModal from '../item/ItemModal.svelte';
+    import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ItemCard from './ItemCard.svelte';
 

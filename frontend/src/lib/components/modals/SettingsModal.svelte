@@ -11,7 +11,7 @@
     } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
-    import ThemeToggle from './ThemeToggle.svelte';
+    import ThemeToggle from '../ui/ThemeToggle.svelte';
 
     export let onClose;
 

@@ -7,11 +7,11 @@
         sourceRefreshTrigger,
     } from '../../stores/navigation.js';
     import { toastError } from '../../stores/toast.js';
-    import ConfirmModal from '../ui/ConfirmModal.svelte';
+    import ConfirmModal from '../modals/ConfirmModal.svelte';
+    import LogsModal from '../modals/LogsModal.svelte';
+    import SettingsModal from '../modals/SettingsModal.svelte';
+    import SourceModal from '../modals/SourceModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import LogsModal from '../ui/LogsModal.svelte';
-    import SettingsModal from '../ui/SettingsModal.svelte';
-    import SourceModal from '../ui/SourceModal.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
     import SourceItem from './SourceItem.svelte';
 
