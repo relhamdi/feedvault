@@ -9,6 +9,7 @@
     import { toastError } from '../../stores/toast.js';
     import ConfirmModal from '../ui/ConfirmModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+    import LogsModal from '../ui/LogsModal.svelte';
     import SettingsModal from '../ui/SettingsModal.svelte';
     import SourceModal from '../ui/SourceModal.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
@@ -18,6 +19,7 @@
     let loading = true;
     let error = null;
 
+    let showLogs = false;
     let showSettings = false;
 
     // Modals
@@ -131,9 +133,12 @@
     <!-- Footer -->
     <div class="sidebar-footer">
         <button class="add-btn" on:click={openCreate}>+ Add source</button>
-        <button class="settings-btn" on:click={() => (showSettings = true)} title="Settings">
-            ⚙
-        </button>
+        <div class="footer-actions">
+            <button class="icon-btn" on:click={() => (showLogs = true)} title="Logs">📋</button>
+            <button class="icon-btn" on:click={() => (showSettings = true)} title="Settings"
+                >⚙</button
+            >
+        </div>
     </div>
 </div>
 
@@ -158,6 +163,10 @@
         ]}
         onClose={() => (contextMenu = null)}
     />
+{/if}
+
+{#if showLogs}
+    <LogsModal onClose={() => (showLogs = false)} />
 {/if}
 
 <!-- Source modal -->
@@ -244,9 +253,15 @@
         color: var(--text-primary);
     }
 
-    .settings-btn {
+    .footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
         flex-shrink: 0;
-        padding: 0.5rem;
+    }
+
+    .icon-btn {
+        padding: 0.4rem;
         border-radius: var(--radius);
         color: var(--text-muted);
         font-size: 1rem;
@@ -255,7 +270,7 @@
             color var(--transition);
     }
 
-    .settings-btn:hover {
+    .icon-btn:hover {
         background: var(--bg-tertiary);
         color: var(--text-primary);
     }
