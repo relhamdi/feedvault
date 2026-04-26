@@ -1,4 +1,37 @@
 /**
+ * Return an icon based on a status string.
+ */
+export function jobStatusIcon(status) {
+    return { done: '✓', error: '✗', running: '🔄', pending: '○' }[status] ?? '?';
+}
+
+/**
+ * Return a class name based on a status string.
+ */
+export function jobStatusClass(status) {
+    return { done: 'success', error: 'danger', running: 'accent', pending: 'muted' }[status] ?? '';
+}
+
+/**
+ * Return a color class name based on a log string.
+ */
+export function logLevelClass(level) {
+    return { info: '', warning: 'warning', error: 'danger' }[level] ?? '';
+}
+
+/**
+ * Format a job's execution time to a readable duration.
+ * @param {*} job
+ * @returns
+ */
+export function formatDuration(job) {
+    if (!job.started_at || !job.finished_at) return null;
+    const ms = new Date(job.finished_at) - new Date(job.started_at);
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+}
+
+/**
  * Format a datetime string to a readable date.
  */
 export function formatDate(dateStr) {
