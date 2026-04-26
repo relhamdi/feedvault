@@ -44,7 +44,7 @@
 
             <span class="job-meta">
                 {job.mode}
-                {#if job.target_type}· {job.target_type}{/if}
+                {#if job.target_type}· by {job.target_type}{/if}
                 · {new Date(job.created_at).toLocaleString()}
                 {#if job.items_upserted > 0}· {job.items_upserted} items{/if}
                 {#if formatDuration(job)}· {formatDuration(job)}{/if}
