@@ -182,7 +182,7 @@
         border-top: none;
         border-radius: 0 0 var(--radius) var(--radius);
         padding: 0.5rem 0.75rem;
-        min-height: 80px;
+        min-height: 85px;
         max-height: 300px;
         overflow-y: auto;
         display: flex;
