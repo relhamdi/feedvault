@@ -117,7 +117,9 @@
             );
             historyJobs = [...historyJobs, ...jobs];
             historyOffset += jobs.length;
-        } catch (_) {
+        } catch (e) {
+            console.error('Failed to load more jobs:', e.message);
+            toastError(`Failed to load more jobs: ${e.message}`);
         } finally {
             loadingMore = false;
         }
