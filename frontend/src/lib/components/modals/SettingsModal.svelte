@@ -14,6 +14,7 @@
     import { createBackdropHandlers } from '../../utils/modal.js';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
+    import ExportModal from './ExportModal.svelte';
 
     export let onClose;
 
@@ -37,11 +38,7 @@
     let defaultScrapeMode = getDefaultScrapeMode();
 
     // Export
-    let exportCredentials = false;
-    let exportReadStatus = true;
-    let exportFavorites = true;
-    let exportCollections = true;
-    let exporting = false;
+    let showExportModal = false;
 
     // Import
     let importFile = null;
@@ -125,29 +122,6 @@
     function saveScrapeMode() {
         setDefaultScrapeMode(defaultScrapeMode);
         toastSuccess('Default scrape mode saved.');
-    }
-
-    async function handleExport() {
-        if (exporting) return;
-        exporting = true;
-        try {
-            // Full export (no selection = everything)
-            await dataApi.exportData(
-                {},
-                {
-                    includeCredentials: exportCredentials,
-                    includeReadStatus: exportReadStatus,
-                    includeFavorites: exportFavorites,
-                    includeCollections: exportCollections,
-                }
-            );
-            toastSuccess('Export downloaded.');
-        } catch (e) {
-            console.error('Export failed:', e.message);
-            toastError(`Export failed: ${e.message}`);
-        } finally {
-            exporting = false;
-        }
     }
 
     async function handleImport() {
@@ -347,36 +321,13 @@
                     Download your data as a JSON file. Media files must be backed up separately from
                     the <code>media/</code> folder.
                 </p>
-                <div class="export-options">
-                    <ToggleField
-                        id="exp-credentials"
-                        label="Include credentials"
-                        bind:checked={exportCredentials}
-                    />
-                    {#if exportCredentials}
-                        <p class="warning-hint">
-                            ⚠ Credentials will be exported in plain text. Keep this file secure.
-                        </p>
-                    {/if}
-                    <ToggleField
-                        id="exp-read"
-                        label="Include read status"
-                        bind:checked={exportReadStatus}
-                    />
-                    <ToggleField
-                        id="exp-favorites"
-                        label="Include favorites"
-                        bind:checked={exportFavorites}
-                    />
-                    <ToggleField
-                        id="exp-collections"
-                        label="Include collections"
-                        bind:checked={exportCollections}
-                    />
-                </div>
-                <button class="btn-export" disabled={exporting} on:click={handleExport}>
-                    {exporting ? 'Exporting...' : '↓ Export all data'}
+                <button class="btn-export" on:click={() => (showExportModal = true)}>
+                    ↓ Export data...
                 </button>
+
+                {#if showExportModal}
+                    <ExportModal onClose={() => (showExportModal = false)} />
+                {/if}
             </section>
 
             <div class="settings-divider"></div>
@@ -583,15 +534,6 @@
 
     .settings-hint.success {
         color: var(--success);
-    }
-
-    .warning-hint {
-        font-size: 0.775rem;
-        color: var(--warning);
-        padding: 0.35rem 0.5rem;
-        background: rgba(232, 184, 75, 0.08);
-        border-radius: var(--radius);
-        border: 1px solid rgba(232, 184, 75, 0.25);
     }
 
     /* Bootstrap */
