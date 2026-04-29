@@ -334,7 +334,7 @@
     .modal-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--bg-modal);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -354,7 +354,7 @@
         max-height: 90vh;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--big-shadow);
         overflow: hidden;
         cursor: default;
         padding-bottom: 1rem;

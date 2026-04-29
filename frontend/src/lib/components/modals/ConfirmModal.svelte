@@ -45,7 +45,7 @@
     .backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--bg-modal);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -61,7 +61,7 @@
         padding: 1.5rem;
         width: 100%;
         max-width: 380px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--big-shadow);
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
