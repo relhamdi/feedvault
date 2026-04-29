@@ -22,6 +22,12 @@ class BootstrapAllResult(BaseModel):
     existing: list[SourceRead]
 
 
+@router.get("/registered-slugs")
+def get_registered_slugs() -> list[str]:
+    """Return all slugs registered in the scraper registry."""
+    return registered_slugs()
+
+
 @router.get("/", response_model=PaginatedResponse[SourceRead])
 def list_sources(
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
