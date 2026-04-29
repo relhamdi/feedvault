@@ -149,7 +149,6 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
 
         try:
             job = ScrapeJob(
-                target_type=ScrapeTargetType.FEED,
                 target_id=feed.id,
                 mode=payload.mode,
                 date_from=_make_aware(
@@ -175,8 +174,6 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
 
             if effective_external_ids:
                 # Fetch by IDs mode — bypass normal fetch/run pipeline
-                job.target_type = ScrapeTargetType.ITEM
-
                 cls = get_scraper_class(source.slug)
                 assert cls is not None
 
@@ -298,11 +295,15 @@ def scrape(
             detail=f"A scraping job is already running for feed {payload.feed_id}",
         )
 
+    target_type = (
+        ScrapeTargetType.ITEM if payload.external_ids else ScrapeTargetType.FEED
+    )
     job_record = ScrapeJobRecord(
         feed_id=feed.id,
         source_id=source.id,
         mode=payload.mode,
         status=ScrapeJobStatus.PENDING,
+        target_type=target_type,
     )
     session.add(job_record)
     session.commit()
