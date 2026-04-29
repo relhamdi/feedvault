@@ -25,7 +25,6 @@ class ScrapeTargetType(str, Enum):
 
 
 class ScrapeJob(BaseModel):
-    target_type: ScrapeTargetType
     target_id: int
     mode: ScrapeMode
     date_from: datetime | None = None

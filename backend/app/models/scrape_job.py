@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
-from app.core.sources.models import ScrapeJobStatus, ScrapeMode
+from app.core.sources.models import ScrapeJobStatus, ScrapeMode, ScrapeTargetType
 
 
 class ScrapeJobRecordBase(SQLModel):
@@ -23,6 +23,7 @@ class ScrapeJobRecordBase(SQLModel):
     )
     mode: ScrapeMode
     status: ScrapeJobStatus = ScrapeJobStatus.PENDING
+    target_type: ScrapeTargetType | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
     items_upserted: int = 0
