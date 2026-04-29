@@ -3,17 +3,18 @@ import { API_BASE_URL, API_URL } from '../config.js';
 /**
  * Base fetch wrapper. Throws on non-2xx responses.
  */
-async function request(path, options = {}) {
-    const response = await fetch(`${API_URL}${path}`, {
-        headers: { 'Content-Type': 'application/json' },
-        ...options,
-    });
-
+async function rawFetch(path, options = {}, jsonBody = false) {
+    const headers = jsonBody ? { 'Content-Type': 'application/json' } : {};
+    const response = await fetch(`${API_URL}${path}`, { headers, ...options });
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.detail || `HTTP ${response.status}`);
     }
+    return response;
+}
 
+async function request(path, options = {}) {
+    const response = await rawFetch(path, options, true);
     return response.status === 204 ? null : response.json();
 }
 
