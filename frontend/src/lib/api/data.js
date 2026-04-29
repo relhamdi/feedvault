@@ -48,4 +48,7 @@ export const dataApi = {
         formData.append('file', file);
         return api.upload(`/data/import?${query}`, formData);
     },
+
+    // Reset database
+    resetDatabase: () => api.delete('/data/reset'),
 };

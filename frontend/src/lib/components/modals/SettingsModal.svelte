@@ -47,6 +47,10 @@
     let importing = false;
     let importReport = null;
 
+    // Reset
+    let resetConfirm = false;
+    let resetting = false;
+
     $: existingSlugs = new Set(existingSources.map((s) => s.slug));
     $: availableSlugs = registeredSlugs.filter((slug) => !existingSlugs.has(slug));
     $: allBootstrapped = availableSlugs.length === 0;
@@ -144,6 +148,26 @@
             toastError(`Import error: ${e.message}`);
         } finally {
             importing = false;
+        }
+    }
+
+    async function handleReset() {
+        if (!resetConfirm) {
+            resetConfirm = true;
+            return;
+        }
+        resetting = true;
+        try {
+            await dataApi.resetDatabase();
+            toastSuccess('Database cleared.');
+            triggerSourceRefresh();
+            resetConfirm = false;
+        } catch (e) {
+            console.error('Reset failed:', e.message);
+            toastError(`Reset failed: ${e.message}`);
+        } finally {
+            resetting = false;
+            resetConfirm = false;
         }
     }
 </script>
@@ -425,6 +449,29 @@
                     </button>
                 </div>
             </section>
+
+            <div class="settings-divider"></div>
+
+            <section class="settings-section">
+                <h4 class="settings-section-title">Danger zone</h4>
+                <div class="settings-row">
+                    <div class="settings-label-group">
+                        <span class="settings-label">Clear database</span>
+                        <span class="settings-hint"
+                            >Deletes all sources, feeds, items and media files.</span
+                        >
+                    </div>
+                    <button
+                        class="btn-reset"
+                        class:confirm={resetConfirm}
+                        disabled={resetting}
+                        on:click={handleReset}
+                        on:blur={() => (resetConfirm = false)}
+                    >
+                        {resetting ? 'Clearing...' : resetConfirm ? 'Confirm?' : 'Clear all'}
+                    </button>
+                </div>
+            </section>
         </div>
     </div>
 </div>
@@ -671,6 +718,33 @@
     }
 
     .btn-check:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .btn-reset {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--danger);
+        color: var(--danger);
+        transition:
+            background var(--transition),
+            color var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn-reset:hover:not(:disabled) {
+        background: var(--danger);
+        color: white;
+    }
+
+    .btn-reset.confirm {
+        background: var(--danger);
+        color: white;
+    }
+
+    .btn-reset:disabled {
         opacity: 0.4;
         cursor: not-allowed;
     }
