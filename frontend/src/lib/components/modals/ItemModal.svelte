@@ -1,10 +1,12 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { itemsApi } from '../../api/items.js';
-    import { scrapeApi } from '../../api/scrape.js';
     import { MEDIA_URL } from '../../config.js';
+    import { pollJob } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { formatDate, parseBBCode } from '../../utils/format.js';
+    import { createBackdropHandlers } from '../../utils/modal.js';
+    import Badge from '../ui/Badge.svelte';
 
     export let item;
     export let feedId;
@@ -15,6 +17,7 @@
     let mouseDownOnBackdrop = false;
 
     let scraping = false;
+    let cleanupPoll = null;
 
     $: supportsScrapeById = 'external_ids' in paramsSchema;
 
@@ -38,45 +41,31 @@
         }
     });
 
+    onDestroy(() => cleanupPoll?.());
+
     async function scrapeItem() {
         if (scraping) return;
         scraping = true;
         try {
             const job = await itemsApi.scrapeItem(feedId, item.external_id);
-            pollScrapeJob(job.id);
+            cleanupPoll = pollJob(job.id, {
+                onDone: async () => {
+                    scraping = false;
+                    toastSuccess('Item refreshed');
+                    const updated = await itemsApi.get(item.id);
+                    item = updated;
+                    onUpdate?.(updated);
+                },
+                onError: (msg) => {
+                    scraping = false;
+                    toastError(`Refresh error: ${msg}`);
+                },
+            });
         } catch (e) {
             scraping = false;
             console.error('Scrape failed:', e.message);
             toastError(`Scrape failed: ${e.message}`);
         }
-    }
-
-    function pollScrapeJob(jobId) {
-        const interval = setInterval(async () => {
-            try {
-                const job = await scrapeApi.getJob(jobId);
-                if (job.status === 'done' || job.status === 'error') {
-                    clearInterval(interval);
-                    scraping = false;
-                    if (job.status === 'error') {
-                        toastError(`Scrape error: ${job.error_message}`);
-                    } else {
-                        toastSuccess('Item refreshed');
-                        // Reload item from API
-                        const updated = await itemsApi.get(item.id);
-                        item = updated;
-                        onUpdate?.(updated);
-                    }
-                }
-            } catch (e) {
-                console.warn(
-                    `Error during pollJob for item ${item.id} and job ${jobId}:`,
-                    e.message
-                );
-                clearInterval(interval);
-                scraping = false;
-            }
-        }, 2000);
     }
 
     async function toggleFavorite() {
@@ -93,34 +82,23 @@
         onUpdate?.(updated);
     }
 
-    function handleBackdropKeydown(e) {
-        if (e.key === 'Escape') onClose();
-    }
-
-    function handleMouseDown(e) {
-        mouseDownOnBackdrop = e.target === e.currentTarget;
-    }
-
-    function handleBackdropClick(e) {
-        if (mouseDownOnBackdrop && e.target === e.currentTarget) onClose();
-        mouseDownOnBackdrop = false;
-    }
-
     function handleImgError(e) {
         // If remote failed, fall back to local
         if (thumbnailSrc === remoteSrc && localSrc) {
             thumbnailSrc = localSrc;
         }
     }
+
+    const { handleMouseDown, handleClick, handleKeydown } = createBackdropHandlers(onClose);
 </script>
 
-<svelte:window on:keydown={handleBackdropKeydown} />
+<svelte:window on:keydown={handleKeydown} />
 
 <div
     class="modal-backdrop"
     on:mousedown={handleMouseDown}
-    on:click={handleBackdropClick}
-    on:keydown={handleBackdropKeydown}
+    on:click={handleClick}
+    on:keydown={handleKeydown}
     role="button"
     tabindex="0"
     aria-label="Close modal"
@@ -185,14 +163,14 @@
 
                 {#if item.summary}
                     <div class="modal-section">
-                        <h4 class="section-title">Summary</h4>
+                        <h4 class="schema-section-title">Summary</h4>
                         <div class="modal-text">{@html parseBBCode(item.summary)}</div>
                     </div>
                 {/if}
 
                 {#if item.description && item.description !== item.summary}
                     <div class="modal-section">
-                        <h4 class="section-title">Description</h4>
+                        <h4 class="schema-section-title">Description</h4>
                         <div class="modal-text">{@html parseBBCode(item.description)}</div>
                     </div>
                 {/if}
@@ -205,10 +183,10 @@
                     <h2 class="modal-title">{item.title}</h2>
                     <div class="modal-badges">
                         {#if item.is_nsfw}
-                            <span class="badge nsfw">NSFW</span>
+                            <Badge type="nsfw" label="NSFW" />
                         {/if}
                         {#if !item.is_public}
-                            <span class="badge unlisted">unlisted</span>
+                            <Badge type="unlisted" label="unlisted" />
                         {/if}
                     </div>
                 </div>
@@ -255,7 +233,7 @@
                 <!-- Stats -->
                 {#if item.stats && Object.keys(item.stats).length > 0}
                     <div class="modal-section stats-section">
-                        <h4 class="section-title">Stats</h4>
+                        <h4 class="schema-section-title">Stats</h4>
                         <div class="stats-grid">
                             {#each Object.entries(item.stats) as [key, value]}
                                 <div class="stat-item">
@@ -270,7 +248,7 @@
                 <!-- Info / meta fields -->
                 {#if item.meta && Object.keys(item.meta).length > 0}
                     <div class="modal-section">
-                        <h4 class="section-title">Info</h4>
+                        <h4 class="schema-section-title">Info</h4>
                         <div class="meta-fields">
                             {#each Object.entries(item.meta).sort( ([a], [b]) => a.localeCompare(b) ) as [key, value]}
                                 {#if value !== null && value !== undefined}
@@ -287,7 +265,7 @@
                 <!-- Categories -->
                 {#if item.categories?.length > 0}
                     <div class="modal-section">
-                        <h4 class="section-title">Categories</h4>
+                        <h4 class="schema-section-title">Categories</h4>
                         <div class="tags-list">
                             {#each item.categories as cat}
                                 <span class="tag category">{cat.name}</span>
@@ -299,7 +277,7 @@
                 <!-- Tags -->
                 {#if item.tags?.length > 0}
                     <div class="modal-section">
-                        <h4 class="section-title">Tags</h4>
+                        <h4 class="schema-section-title">Tags</h4>
                         <div class="tags-list">
                             {#each item.tags as tag}
                                 <span class="tag">{tag}</span>
@@ -315,7 +293,7 @@
             <div class="modal-footer">
                 {#each Object.entries(mediaByType) as [type, medias]}
                     <div class="footer-section">
-                        <h4 class="section-title">{type}s</h4>
+                        <h4 class="schema-section-title">{type}s</h4>
                         {#if type === 'image'}
                             <div class="media-images">
                                 {#each medias as media}
@@ -356,7 +334,7 @@
     .modal-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--bg-modal);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -376,7 +354,7 @@
         max-height: 90vh;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--big-shadow);
         overflow: hidden;
         cursor: default;
         padding-bottom: 1rem;
@@ -517,24 +495,6 @@
         flex-shrink: 0;
     }
 
-    .badge {
-        font-size: 0.65rem;
-        font-weight: 700;
-        padding: 0.15rem 0.35rem;
-        border-radius: 4px;
-        text-transform: uppercase;
-        text-align: center;
-    }
-
-    .badge.nsfw {
-        background: var(--danger);
-        color: white;
-    }
-    .badge.unlisted {
-        background: var(--text-muted);
-        color: white;
-    }
-
     /* Meta */
     .modal-meta {
         justify-content: space-around;
@@ -607,16 +567,8 @@
         gap: 0.5rem;
     }
 
-    .section-title {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-muted);
-        font-weight: 600;
-    }
-
     /* Stats */
-    .stats-section .section-title {
+    .stats-section .schema-section-title {
         text-align: center;
     }
 

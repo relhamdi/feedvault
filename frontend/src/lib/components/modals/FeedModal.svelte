@@ -2,7 +2,9 @@
     import { feedsApi } from '../../api/feeds.js';
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
-    import FormField from './FormField.svelte';
+    import { parseTags } from '../../utils/format.js';
+    import FormField from '../ui/FormField.svelte';
+    import ToggleField from '../ui/ToggleField.svelte';
     import FormModal from './FormModal.svelte';
 
     export let feed = null; // null = create mode
@@ -29,13 +31,6 @@
     };
 
     let paramsError = null;
-
-    function parseTags(str) {
-        return str
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean);
-    }
 
     function validateParams() {
         try {
@@ -155,7 +150,7 @@
         <input id="feed-url" type="url" bind:value={form.url} placeholder="https://..." />
     </FormField>
 
-    <div class="row">
+    <div class="form-row">
         <FormField id="feed-color" label="Color">
             <input id="feed-color" type="color" bind:value={form.color} />
         </FormField>
@@ -179,8 +174,8 @@
     </FormField>
 
     {#if Object.keys(paramsSchema).length > 0}
-        <div class="params-section">
-            <p class="section-title">Params</p>
+        <div class="schema-section">
+            <p class="schema-section-title">Params</p>
             {#each Object.entries(paramsSchema) as [key, hint]}
                 <FormField id="param-{key}" label={key} hint={String(hint)}>
                     {#if key === 'external_ids'}
@@ -219,55 +214,5 @@
         </FormField>
     {/if}
 
-    <div class="toggle-row">
-        <label for="feed-active" class="toggle-label">Active</label>
-        <input id="feed-active" type="checkbox" bind:checked={form.is_active} />
-    </div>
+    <ToggleField id="source-active" label="Active" bind:checked={form.is_active} />
 </FormModal>
-
-<style>
-    .form-error {
-        font-size: 0.875rem;
-        color: var(--danger);
-        padding: 0.5rem 0.75rem;
-        background: color-mix(in srgb, var(--danger) 10%, transparent);
-        border-radius: var(--radius);
-    }
-
-    .row {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.75rem;
-        align-items: end;
-    }
-
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .toggle-label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-
-    .params-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--bg-secondary);
-    }
-
-    .section-title {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-    }
-</style>

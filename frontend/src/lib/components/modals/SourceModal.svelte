@@ -2,8 +2,10 @@
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
+    import { parseTags } from '../../utils/format.js';
     import FormField from '../ui/FormField.svelte';
-    import FormModal from '../ui/FormModal.svelte';
+    import ToggleField from '../ui/ToggleField.svelte';
+    import FormModal from './FormModal.svelte';
 
     export let source = null; // null = create mode
     export let onClose;
@@ -56,13 +58,6 @@
             credentialsSchema = {};
             credentialsValues = {};
         }
-    }
-
-    function parseTags(str) {
-        return str
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean);
     }
 
     async function handleSubmit() {
@@ -143,7 +138,7 @@
         <input id="source-url" type="url" bind:value={form.base_url} placeholder="https://.../v1" />
     </FormField>
 
-    <div class="row">
+    <div class="form-row">
         <FormField id="source-color" label="Color">
             <input id="source-color" type="color" bind:value={form.color} />
         </FormField>
@@ -166,15 +161,12 @@
         />
     </FormField>
 
-    <div class="toggle-row">
-        <label for="source-active" class="toggle-label">Active</label>
-        <input id="source-active" type="checkbox" bind:checked={form.is_active} />
-    </div>
+    <ToggleField id="source-active" label="Active" bind:checked={form.is_active} />
 
     <!-- Credentials — create mode only, shown if schema available -->
     {#if !isEdit && Object.keys(credentialsSchema).length > 0}
-        <div class="credentials-section">
-            <p class="section-title">Credentials</p>
+        <div class="schema-section">
+            <p class="schema-section-title">Credentials</p>
             {#each Object.entries(credentialsSchema) as [key, hint]}
                 <FormField id="cred-{key}" label={key} hint={String(hint)}>
                     <input
@@ -190,9 +182,9 @@
 
     <!-- Credentials — edit mode -->
     {#if isEdit}
-        <div class="credentials-section">
-            <p class="section-title">Credentials</p>
-            <p class="section-hint">
+        <div class="schema-section">
+            <p class="schema-section-title">Credentials</p>
+            <p class="schema-section-hint">
                 To update credentials, enter new values below. Leave empty to keep existing.
             </p>
             {#each Object.entries(credentialsValues) as [key, _]}
@@ -201,60 +193,8 @@
                 </FormField>
             {/each}
             {#if Object.keys(credentialsValues).length === 0}
-                <p class="section-hint">No credentials schema available for this source.</p>
+                <p class="schema-section-hint">No credentials schema available for this source.</p>
             {/if}
         </div>
     {/if}
 </FormModal>
-
-<style>
-    .form-error {
-        font-size: 0.875rem;
-        color: var(--danger);
-        padding: 0.5rem 0.75rem;
-        background: color-mix(in srgb, var(--danger) 10%, transparent);
-        border-radius: var(--radius);
-    }
-
-    .row {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.75rem;
-        align-items: end;
-    }
-
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .toggle-label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-
-    .credentials-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--bg-secondary);
-    }
-
-    .section-title {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-    }
-
-    .section-hint {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-</style>

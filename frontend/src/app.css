@@ -71,6 +71,46 @@ textarea {
     min-height: 80px;
 }
 
+/* Shared schema section (credentials, params) */
+.schema-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+}
+
+.schema-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.schema-section-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.form-error {
+    font-size: 0.875rem;
+    color: var(--danger);
+    padding: 0.5rem 0.75rem;
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+    border-radius: var(--radius);
+}
+
+
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

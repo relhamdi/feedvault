@@ -1,16 +1,26 @@
 <script>
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
-    import { selectedFeedId, selectedSourceId } from '../../stores/navigation.js';
+    import {
+        selectedFeedId,
+        selectedSourceId,
+        sourceRefreshTrigger,
+    } from '../../stores/navigation.js';
     import { toastError } from '../../stores/toast.js';
-    import ConfirmModal from '../ui/ConfirmModal.svelte';
+    import ConfirmModal from '../modals/ConfirmModal.svelte';
+    import LogsModal from '../modals/LogsModal.svelte';
+    import SettingsModal from '../modals/SettingsModal.svelte';
+    import SourceModal from '../modals/SourceModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import SourceModal from '../ui/SourceModal.svelte';
+    import ThemeToggle from '../ui/ThemeToggle.svelte';
     import SourceItem from './SourceItem.svelte';
 
     let sources = [];
     let loading = true;
     let error = null;
+
+    let showLogs = false;
+    let showSettings = false;
 
     // Modals
     let showSourceModal = false;
@@ -22,6 +32,8 @@
 
     // Context menu
     let contextMenu = null; // { x, y, source }
+
+    $: if ($sourceRefreshTrigger) loadSources();
 
     onMount(async () => {
         await loadSources();
@@ -93,9 +105,10 @@
 </script>
 
 <div class="sidebar">
+    <!-- Header -->
     <div class="sidebar-header">
         <span class="sidebar-title">FeedVault</span>
-        <!-- Theme toggle will go here -->
+        <ThemeToggle />
     </div>
 
     <nav class="source-list">
@@ -117,10 +130,21 @@
         {/if}
     </nav>
 
+    <!-- Footer -->
     <div class="sidebar-footer">
         <button class="add-btn" on:click={openCreate}>+ Add source</button>
+        <div class="footer-actions">
+            <button class="icon-btn" on:click={() => (showLogs = true)} title="Logs">📋</button>
+            <button class="icon-btn" on:click={() => (showSettings = true)} title="Settings"
+                >⚙</button
+            >
+        </div>
     </div>
 </div>
+
+{#if showSettings}
+    <SettingsModal onClose={() => (showSettings = false)} />
+{/if}
 
 <!-- Context menu -->
 {#if contextMenu}
@@ -139,6 +163,10 @@
         ]}
         onClose={() => (contextMenu = null)}
     />
+{/if}
+
+{#if showLogs}
+    <LogsModal onClose={() => (showLogs = false)} />
 {/if}
 
 <!-- Source modal -->
@@ -203,6 +231,9 @@
     }
 
     .sidebar-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         padding: 0.75rem;
         border-top: 1px solid var(--border);
     }
@@ -218,6 +249,28 @@
     }
 
     .add-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        flex-shrink: 0;
+    }
+
+    .icon-btn {
+        padding: 0.4rem;
+        border-radius: var(--radius);
+        color: var(--text-muted);
+        font-size: 1rem;
+        transition:
+            background var(--transition),
+            color var(--transition);
+    }
+
+    .icon-btn:hover {
         background: var(--bg-tertiary);
         color: var(--text-primary);
     }
