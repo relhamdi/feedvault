@@ -29,4 +29,9 @@ export const api = {
     patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
     put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
     delete: (path) => request(path, { method: 'DELETE' }),
+    upload: (path, formData) =>
+        rawFetch(path, { method: 'POST', body: formData }).then((r) =>
+            r.status === 204 ? null : r.json()
+        ),
+    download: (path, body) => rawFetch(path, { method: 'POST', body: JSON.stringify(body) }, true),
 };
