@@ -1,12 +1,16 @@
 import json
+import shutil
 import traceback
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy import delete
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
+from app.config import settings
 from app.core.data_export import (
     serialize_collection,
     serialize_source,
@@ -223,3 +227,17 @@ async def import_data(
         report.errors.append(f"Import failed: {e}")
 
     return report
+
+
+@router.delete("/reset", status_code=204)
+def reset_database(session: Session = Depends(get_session)):
+    session.exec(delete(Collection))
+    # Source will cascade delete the rest
+    session.exec(delete(Source))
+    session.commit()
+
+    # Clean up in the media folder
+    media_dir = Path(settings.media_dir)
+    if media_dir.exists():
+        shutil.rmtree(media_dir)
+        media_dir.mkdir()
