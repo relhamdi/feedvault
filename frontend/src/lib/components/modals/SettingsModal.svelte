@@ -560,7 +560,7 @@
     }
 
     .settings-divider {
-        height: 1px;
+        min-height: 1px;
         background: var(--border);
     }
 
