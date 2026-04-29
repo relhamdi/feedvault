@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { rootApi } from '../../api/client.js';
+    import { dataApi } from '../../api/data.js';
     import { sourcesApi } from '../../api/sources.js';
     import { triggerSourceRefresh } from '../../stores/navigation.js';
     import {
@@ -12,12 +13,13 @@
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
+    import ToggleField from '../ui/ToggleField.svelte';
 
     export let onClose;
 
     const { handleMouseDown, handleClick, handleKeydown } = createBackdropHandlers(onClose);
 
-    // --- Sources bootstrap ---
+    // Sources bootstrap
     let registeredSlugs = []; // Slugs in registry (from bootstrap endpoint)
     let existingSources = []; // Sources already in DB
     let bootstrapping = new Set(); // Slugs currently bootstrapping
@@ -33,6 +35,20 @@
     // Persisted in localStorage
     let pollInterval = getPollInterval();
     let defaultScrapeMode = getDefaultScrapeMode();
+
+    // Export
+    let exportCredentials = false;
+    let exportReadStatus = true;
+    let exportFavorites = true;
+    let exportCollections = true;
+    let exporting = false;
+
+    // Import
+    let importFile = null;
+    let importStrategy = 'upsert';
+    let importRedownload = false;
+    let importing = false;
+    let importReport = null;
 
     $: existingSlugs = new Set(existingSources.map((s) => s.slug));
     $: availableSlugs = registeredSlugs.filter((slug) => !existingSlugs.has(slug));
@@ -109,6 +125,52 @@
     function saveScrapeMode() {
         setDefaultScrapeMode(defaultScrapeMode);
         toastSuccess('Default scrape mode saved.');
+    }
+
+    async function handleExport() {
+        if (exporting) return;
+        exporting = true;
+        try {
+            // Full export (no selection = everything)
+            await dataApi.exportData(
+                {},
+                {
+                    includeCredentials: exportCredentials,
+                    includeReadStatus: exportReadStatus,
+                    includeFavorites: exportFavorites,
+                    includeCollections: exportCollections,
+                }
+            );
+            toastSuccess('Export downloaded.');
+        } catch (e) {
+            console.error('Export failed:', e.message);
+            toastError(`Export failed: ${e.message}`);
+        } finally {
+            exporting = false;
+        }
+    }
+
+    async function handleImport() {
+        if (!importFile || importing) return;
+        importing = true;
+        importReport = null;
+        try {
+            importReport = await dataApi.importData(importFile, {
+                conflictStrategy: importStrategy,
+                redownloadMissingImages: importRedownload,
+            });
+            if (importReport.success) {
+                toastSuccess('Import completed successfully.');
+                triggerSourceRefresh();
+            } else {
+                toastError('Import failed — see report for details.');
+            }
+        } catch (e) {
+            console.error('Import error:', e.message);
+            toastError(`Import error: ${e.message}`);
+        } finally {
+            importing = false;
+        }
     }
 </script>
 
@@ -275,6 +337,143 @@
                     </div>
                 </div>
             </section>
+
+            <div class="settings-divider"></div>
+
+            <!-- Export -->
+            <section class="settings-section">
+                <h4 class="settings-section-title">Export</h4>
+                <p class="settings-hint">
+                    Download your data as a JSON file. Media files must be backed up separately from
+                    the <code>media/</code> folder.
+                </p>
+                <div class="export-options">
+                    <ToggleField
+                        id="exp-credentials"
+                        label="Include credentials"
+                        bind:checked={exportCredentials}
+                    />
+                    {#if exportCredentials}
+                        <p class="warning-hint">
+                            ⚠ Credentials will be exported in plain text. Keep this file secure.
+                        </p>
+                    {/if}
+                    <ToggleField
+                        id="exp-read"
+                        label="Include read status"
+                        bind:checked={exportReadStatus}
+                    />
+                    <ToggleField
+                        id="exp-favorites"
+                        label="Include favorites"
+                        bind:checked={exportFavorites}
+                    />
+                    <ToggleField
+                        id="exp-collections"
+                        label="Include collections"
+                        bind:checked={exportCollections}
+                    />
+                </div>
+                <button class="btn-export" disabled={exporting} on:click={handleExport}>
+                    {exporting ? 'Exporting...' : '↓ Export all data'}
+                </button>
+            </section>
+
+            <div class="settings-divider"></div>
+
+            <!-- Import -->
+            <section class="settings-section">
+                <h4 class="settings-section-title">Import</h4>
+                <p class="settings-hint">
+                    Import a FeedVault export file. Media files must be restored manually to the <code
+                        >media/</code
+                    > folder.
+                </p>
+
+                {#if importReport}
+                    <div
+                        class="import-report"
+                        class:success={importReport.success}
+                        class:error={!importReport.success}
+                    >
+                        <p class="report-title">
+                            {importReport.success ? '✓ Import successful' : '✗ Import failed'}
+                        </p>
+                        <div class="report-stats">
+                            <span
+                                >Sources: +{importReport.sources_created} / ~{importReport.sources_skipped}</span
+                            >
+                            <span
+                                >Feeds: +{importReport.feeds_created} / ~{importReport.feeds_skipped}</span
+                            >
+                            <span
+                                >Items: +{importReport.items_created} / ↺{importReport.items_updated}
+                                / ~{importReport.items_skipped}</span
+                            >
+                            {#if importReport.images_downloaded > 0}
+                                <span>Images: ↓{importReport.images_downloaded}</span>
+                            {/if}
+                            {#if importReport.images_failed > 0}
+                                <span class="stat-warn"
+                                    >Images failed: {importReport.images_failed}</span
+                                >
+                            {/if}
+                        </div>
+                        {#if importReport.warnings?.length > 0}
+                            <ul class="report-messages report-warnings">
+                                {#each importReport.warnings as w}
+                                    <li>⚠ {w}</li>
+                                {/each}
+                            </ul>
+                        {/if}
+                        {#if importReport.errors?.length > 0}
+                            <ul class="report-messages report-errors">
+                                {#each importReport.errors as err}
+                                    <li>{err}</li>
+                                {/each}
+                            </ul>
+                        {/if}
+                    </div>
+                {/if}
+
+                <div class="export-options">
+                    <div class="settings-row">
+                        <span class="settings-label">Conflict strategy</span>
+                        <select bind:value={importStrategy}>
+                            <option value="upsert">Upsert (overwrite existing)</option>
+                            <option value="skip">Skip existing</option>
+                        </select>
+                    </div>
+                    <ToggleField
+                        id="import-redownload"
+                        label="Re-download missing images"
+                        bind:checked={importRedownload}
+                    />
+                </div>
+
+                <div class="import-actions">
+                    <label class="btn-file" for="import-file">
+                        📂 Choose file
+                        <input
+                            id="import-file"
+                            type="file"
+                            accept=".json"
+                            on:change={(e) => (importFile = e.target.files[0])}
+                            style="display: none"
+                        />
+                    </label>
+                    {#if importFile}
+                        <span class="import-filename">{importFile.name}</span>
+                    {/if}
+                    <button
+                        class="btn-export"
+                        disabled={!importFile || importing}
+                        on:click={handleImport}
+                    >
+                        {importing ? 'Importing...' : '↑ Import'}
+                    </button>
+                </div>
+            </section>
         </div>
     </div>
 </div>
@@ -384,6 +583,15 @@
 
     .settings-hint.success {
         color: var(--success);
+    }
+
+    .warning-hint {
+        font-size: 0.775rem;
+        color: var(--warning);
+        padding: 0.35rem 0.5rem;
+        background: rgba(232, 184, 75, 0.08);
+        border-radius: var(--radius);
+        border: 1px solid rgba(232, 184, 75, 0.25);
     }
 
     /* Bootstrap */
@@ -560,5 +768,130 @@
 
     .btn-save:hover {
         opacity: 0.85;
+    }
+
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        background: var(--accent);
+        color: white;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: opacity var(--transition);
+        align-self: flex-start;
+        cursor: pointer;
+    }
+
+    .btn-export:hover:not(:disabled) {
+        opacity: 0.85;
+    }
+
+    .btn-export:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .btn-file {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition:
+            background var(--transition),
+            color var(--transition);
+    }
+
+    .btn-file:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    /* Export options */
+    .export-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+
+    /* Import */
+    .import-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .import-filename {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    /* Import report */
+    .import-report {
+        padding: 0.75rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .import-report.success {
+        border-color: var(--success);
+    }
+    .import-report.error {
+        border-color: var(--danger);
+    }
+
+    .report-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .import-report.success .report-title {
+        color: var(--success);
+    }
+    .import-report.error .report-title {
+        color: var(--danger);
+    }
+
+    .report-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1.25rem;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .stat-warn {
+        color: var(--warning);
+    }
+
+    .report-messages {
+        font-size: 0.775rem;
+        padding-left: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .report-warnings {
+        color: var(--warning);
+    }
+    .report-errors {
+        color: var(--danger);
     }
 </style>
