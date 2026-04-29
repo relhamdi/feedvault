@@ -7,9 +7,8 @@ export const dataApi = {
     async exportData(selection = {}, options = {}) {
         const body = {
             selection: {
-                feed_ids: selection.feedIds ?? [],
-                item_ids: selection.itemIds ?? [],
-                collection_ids: selection.collectionIds ?? [],
+                feed_ids: selection.feed_ids ?? [],
+                collection_ids: selection.collection_ids ?? [],
             },
             options: {
                 include_credentials: options.includeCredentials ?? false,
