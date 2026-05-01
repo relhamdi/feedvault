@@ -3,9 +3,9 @@
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
     import { parseTags } from '../../utils/format.js';
+    import FormModal from '../modals/FormModal.svelte';
     import FormField from '../ui/FormField.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
-    import FormModal from '../modals/FormModal.svelte';
 
     export let source = null; // null = create mode
     export let onClose;

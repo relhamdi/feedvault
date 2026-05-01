@@ -11,10 +11,10 @@
     import { getDefaultScrapeMode, pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
+    import FeedTab from '../feed/FeedTab.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import FeedModal from '../modals/FeedModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import FeedTab from '../feed/FeedTab.svelte';
 
     let feeds = [];
     let loading = true;

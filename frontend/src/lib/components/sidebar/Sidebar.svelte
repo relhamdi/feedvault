@@ -11,9 +11,9 @@
     import LogsModal from '../modals/LogsModal.svelte';
     import SettingsModal from '../modals/SettingsModal.svelte';
     import SourceModal from '../modals/SourceModal.svelte';
+    import SourceItem from '../sidebar/SourceItem.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
-    import SourceItem from '../sidebar/SourceItem.svelte';
 
     let sources = [];
     let loading = true;

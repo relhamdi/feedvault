@@ -12,9 +12,9 @@
     } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
+    import ExportModal from '../modals/ExportModal.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
-    import ExportModal from '../modals/ExportModal.svelte';
 
     export let onClose;
 
