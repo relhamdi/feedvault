@@ -1,5 +1,5 @@
 <script>
-    export let type = 'default'; // nsfw | unlisted | favorite | inactive
+    export let type = 'default';
     export let label;
     export let title = '';
 </script>
@@ -27,7 +27,7 @@
         color: white;
     }
     .badge.favorite {
-        background: #e8b84b;
+        color: var(----warning);
         color: white;
     }
     .badge.inactive {
