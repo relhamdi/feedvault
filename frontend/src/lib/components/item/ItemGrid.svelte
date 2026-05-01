@@ -13,7 +13,7 @@
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import ItemCard from './ItemCard.svelte';
+    import ItemCard from '../item/ItemCard.svelte';
 
     let items = [];
     let total = 0;

@@ -14,7 +14,7 @@
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import FeedModal from '../modals/FeedModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import FeedTab from './FeedTab.svelte';
+    import FeedTab from '../feed/FeedTab.svelte';
 
     let feeds = [];
     let loading = true;

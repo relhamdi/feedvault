@@ -14,7 +14,7 @@
     import { createBackdropHandlers } from '../../utils/modal.js';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
-    import ExportModal from './ExportModal.svelte';
+    import ExportModal from '../modals/ExportModal.svelte';
 
     export let onClose;
 

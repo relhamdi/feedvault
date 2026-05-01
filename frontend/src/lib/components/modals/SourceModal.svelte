@@ -5,7 +5,7 @@
     import { parseTags } from '../../utils/format.js';
     import FormField from '../ui/FormField.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
-    import FormModal from './FormModal.svelte';
+    import FormModal from '../modals/FormModal.svelte';
 
     export let source = null; // null = create mode
     export let onClose;

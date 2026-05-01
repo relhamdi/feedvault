@@ -13,7 +13,7 @@
     import SourceModal from '../modals/SourceModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
-    import SourceItem from './SourceItem.svelte';
+    import SourceItem from '../sidebar/SourceItem.svelte';
 
     let sources = [];
     let loading = true;
