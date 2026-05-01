@@ -119,6 +119,12 @@
         contextMenu = { x: e.detail.clientX, y: e.detail.clientY, feed };
     }
 
+    function handleWheel(e) {
+        if (e.deltaY === 0) return;
+        e.preventDefault();
+        e.currentTarget.scrollLeft += e.deltaY;
+    }
+
     async function startScrape(feedId) {
         if (scrapingFeedIds.has(feedId)) return;
         scrapingFeedIds.add(feedId);
@@ -159,7 +165,7 @@
             disabled={!currentSource}
             on:click={openCreate}>+</button
         >
-        <div class="feed-tabs">
+        <div class="feed-tabs" on:wheel={handleWheel}>
             {#if loading}
                 <span class="tabs-status">Loading...</span>
             {:else if error}
