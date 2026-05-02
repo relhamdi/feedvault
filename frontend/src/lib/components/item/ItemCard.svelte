@@ -5,6 +5,7 @@
     import Badge from '../ui/Badge.svelte';
 
     export let item;
+    export let source = null; // non-null in collection mode
 
     const dispatch = createEventDispatcher();
 
@@ -45,7 +46,11 @@
                     <Badge type="favorite" label="♥" />
                 {/if}
             </div>
-            <div class="card-badges card-badges-bottom"></div>
+            <div class="card-badges card-badges-bottom">
+                {#if source}
+                    <Badge type="source" label={source.name} bgColor={source.color} />
+                {/if}
+            </div>
         </div>
 
         <!-- Content -->
