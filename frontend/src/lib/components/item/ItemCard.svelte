@@ -34,7 +34,7 @@
             {/if}
 
             <!-- Badges overlay -->
-            <div class="card-badges">
+            <div class="card-badges card-badges-top">
                 {#if item.is_nsfw}
                     <Badge type="nsfw" label="NSFW" />
                 {/if}
@@ -45,6 +45,7 @@
                     <Badge type="favorite" label="♥" />
                 {/if}
             </div>
+            <div class="card-badges card-badges-bottom"></div>
         </div>
 
         <!-- Content -->
@@ -142,11 +143,19 @@
     /* Badges */
     .card-badges {
         position: absolute;
-        top: 0.4rem;
-        left: 0.4rem;
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
+    }
+
+    .card-badges-top {
+        top: 0.4rem;
+        left: 0.4rem;
+    }
+
+    .card-badges-bottom {
+        bottom: 0.4rem;
+        right: 0.4rem;
     }
 
     /* Content */
