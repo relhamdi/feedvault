@@ -5,6 +5,8 @@ import { statsApi } from '../api/stats.js';
 export const feedStats = writable({});
 // { [sourceId]: SourceStats }
 export const sourceStats = writable({});
+// { [collectionId]: CollectionStats }
+export const collectionStats = writable({});
 
 export async function refreshFeedStats(feedId) {
     try {
@@ -21,5 +23,14 @@ export async function refreshSourceStats(sourceId) {
         sourceStats.update((s) => ({ ...s, [sourceId]: stats }));
     } catch (e) {
         console.warn(`Failed to refresh stats for source ${sourceId}:`, e.message);
+    }
+}
+
+export async function refreshCollectionStats(collectionId) {
+    try {
+        const stats = await statsApi.collection(collectionId);
+        collectionStats.update((s) => ({ ...s, [collectionId]: stats }));
+    } catch (e) {
+        console.warn(`Failed to refresh stats for collection ${collectionId}:`, e.message);
     }
 }
