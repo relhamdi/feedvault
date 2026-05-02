@@ -400,7 +400,7 @@
     }
 
     .action-btn.active {
-        color: var(----warning);
+        color: var(--warning);
     }
 
     .action-btn.spinning {

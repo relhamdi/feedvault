@@ -27,7 +27,7 @@
         color: white;
     }
     .badge.favorite {
-        color: var(----warning);
+        background: var(--warning);
         color: white;
     }
     .badge.inactive {

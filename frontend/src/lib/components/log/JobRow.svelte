@@ -218,7 +218,7 @@
     }
 
     .log-entry.warning .log-level {
-        color: var(----warning);
+        color: var(--warning);
     }
     .log-entry.danger .log-level {
         color: var(--danger);
