@@ -1,5 +1,7 @@
 from enum import Enum
 
+from app.models.item import Item
+
 
 class SortOrder(str, Enum):
     ASC = "asc"
@@ -27,3 +29,11 @@ class ItemSortField(str, Enum):
     SOURCE_UPDATED_AT = "source_updated_at"
     SCRAPED_AT = "scraped_at"
     LAST_SCRAPED_AT = "last_scraped_at"
+
+
+ITEM_SORT_COLUMNS = {
+    ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
+    ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
+    ItemSortField.SCRAPED_AT: Item.scraped_at,
+    ItemSortField.LAST_SCRAPED_AT: Item.last_scraped_at,
+}
