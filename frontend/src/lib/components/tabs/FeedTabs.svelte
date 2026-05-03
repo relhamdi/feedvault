@@ -132,6 +132,18 @@
     }
 
     async function startScrape(feedId) {
+        // Check if source is inactive
+        if (!currentSource?.is_active) {
+            toastError('Source is inactive.');
+            return;
+        }
+        // Check if feed is inactive
+        const feed = feeds.find((f) => f.id === feedId);
+        if (!feed?.is_active) {
+            toastError('Feed is inactive.');
+            return;
+        }
+
         if (scrapingFeedIds.has(feedId)) return;
         scrapingFeedIds.add(feedId);
         scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
@@ -207,7 +219,12 @@
         y={contextMenu.y}
         items={[
             { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.feed) },
-            { label: 'Scrape', icon: '⟳', action: () => startScrape(contextMenu.feed.id) },
+            {
+                label: 'Scrape',
+                icon: '⟳',
+                disabled: !contextMenu.feed.is_active || !currentSource?.is_active,
+                action: () => startScrape(contextMenu.feed.id),
+            },
             { separator: true },
             {
                 label: 'Delete',
