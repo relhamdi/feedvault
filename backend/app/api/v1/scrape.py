@@ -140,6 +140,16 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             return
         assert source.id is not None
 
+        # No scraping on inactive source's feeds
+        if not source.is_active:
+            _fail_job(session, job_record, "Source is inactive")
+            return
+
+        # No scraping on inactive feeds
+        if not feed.is_active:
+            _fail_job(session, job_record, "Feed is inactive")
+            return
+
         # Mark job as running
         job_record.status = ScrapeJobStatus.RUNNING
         job_record.started_at = datetime.now(UTC)
