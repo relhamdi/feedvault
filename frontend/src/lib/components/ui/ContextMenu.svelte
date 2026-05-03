@@ -35,7 +35,9 @@
                 <button
                     class="context-item"
                     class:danger={item.danger}
-                    on:click={() => handleClick(item.action)}
+                    class:disabled={item.disabled}
+                    disabled={item.disabled}
+                    on:click={() => !item.disabled && handleClick(item.action)}
                 >
                     {#if item.icon}
                         <span class="context-icon">{item.icon}</span>
@@ -83,6 +85,15 @@
 
     .context-item.danger:hover {
         background: color-mix(in srgb, var(--danger) 10%, transparent);
+    }
+
+    .context-item.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .context-item.disabled:hover {
+        background: none;
     }
 
     .context-icon {
