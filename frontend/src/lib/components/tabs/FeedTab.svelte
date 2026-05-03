@@ -21,7 +21,13 @@
         dispatch('contextmenu', e);
     }}
 >
-    <button class="feed-tab" class:active on:click={() => dispatch('select')} title={feed.name}>
+    <button
+        class="feed-tab"
+        class:active
+        class:inactive={!feed.is_active}
+        on:click={() => dispatch('select')}
+        title={feed.name}
+    >
         {#if feed.icon_path}
             <img class="feed-icon" src={feed.icon_path} alt={feed.name} />
         {/if}
@@ -86,6 +92,14 @@
         color: var(--text-primary);
         font-weight: 500;
         box-shadow: inset 0 -2px 0 var(--accent);
+    }
+
+    .feed-tab.inactive {
+        opacity: 0.45;
+    }
+
+    .feed-tab.inactive:hover {
+        opacity: 0.65;
     }
 
     .feed-icon {
