@@ -18,6 +18,11 @@ export const feedSort = persistedSort('sort:feeds', {
     sort_order: 'asc',
 });
 
+export const collectionSort = persistedSort('sort:collections', {
+    sort_by: 'name',
+    sort_order: 'asc',
+});
+
 export const itemSort = persistedSort('sort:items', {
     sort_by: 'source_updated_at',
     sort_order: 'desc',
@@ -37,6 +42,12 @@ export const FEED_SORT_OPTIONS = [
     { value: 'created_at', label: 'Created' },
     { value: 'updated_at', label: 'Updated' },
     { value: 'is_active', label: 'Active' },
+];
+
+export const COLLECTION_SORT_OPTIONS = [
+    { value: 'name', label: 'Name' },
+    { value: 'created_at', label: 'Created' },
+    { value: 'updated_at', label: 'Updated' },
 ];
 
 export const ITEM_SORT_OPTIONS = [

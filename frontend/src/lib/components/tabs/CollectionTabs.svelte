@@ -7,12 +7,14 @@
         selectedCollectionId,
         triggerCollectionRefresh,
     } from '../../stores/navigation.js';
+    import { COLLECTION_SORT_OPTIONS, collectionSort } from '../../stores/sorting.js';
     import { refreshCollectionStats } from '../../stores/stats.js';
     import { toastError } from '../../stores/toast.js';
     import CollectionModal from '../modals/CollectionModal.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import CollectionTab from '../tabs/CollectionTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+    import SortControl from '../ui/SortControl.svelte';
 
     let collections = [];
     let loading = true;
@@ -29,6 +31,7 @@
     let initialized = false;
 
     $: if (initialized && $collectionRefreshTrigger) loadCollections();
+    $: if ($collectionSort) loadCollections();
 
     onMount(async () => {
         await loadCollections();
@@ -39,7 +42,13 @@
         loading = true;
         error = null;
         try {
-            collections = (await collectionsApi.list()).items;
+            collections = (
+                await collectionsApi.list({
+                    sort_by: $collectionSort.sort_by,
+                    sort_order: $collectionSort.sort_order,
+                    limit: 200,
+                })
+            ).items;
             // Auto-select first if none selected or current no longer exists
             if (collections.length > 0) {
                 const stillExists = collections.find((c) => c.id === $selectedCollectionId);
@@ -113,6 +122,11 @@
 <div class="collection-tabs-wrapper">
     <button class="add-tab-btn" title="New collection" on:click={openCreate}>+</button>
 
+    <!-- Sorting options -->
+    <div class="list-controls">
+        <SortControl sort={collectionSort} options={COLLECTION_SORT_OPTIONS} />
+    </div>
+
     <div class="collection-tabs" on:wheel={handleWheel}>
         {#if loading}
             <span class="tabs-status">Loading...</span>
@@ -178,6 +192,13 @@
         border-bottom: 1px solid var(--border);
         background: var(--bg-secondary);
         min-height: 48px;
+    }
+
+    .list-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 1rem 0.25rem;
     }
 
     .collection-tabs {
