@@ -12,6 +12,7 @@ from app.database import get_session
 from app.models.feed import Feed
 from app.models.item import Item
 from app.models.source import Source
+from app.models.stats import GlobalStats
 
 app = FastAPI(
     title="FeedVault",
@@ -39,7 +40,7 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/stats")
+@app.get("/stats", response_model=GlobalStats)
 def global_stats(session: Session = Depends(get_session)):
     sources = session.exec(select(func.count(Source.id))).one()  # type: ignore
     feeds = session.exec(select(func.count(Feed.id))).one()  # type: ignore
@@ -50,13 +51,13 @@ def global_stats(session: Session = Depends(get_session)):
             func.sum(case((Item.is_favorite, 1), else_=0)),
         )
     ).one()
-    return {
-        "sources": sources or 0,
-        "feeds": feeds or 0,
-        "items": total or 0,
-        "unread": unread or 0,
-        "favorite": favorite or 0,
-    }
+    return GlobalStats(
+        sources=sources or 0,
+        feeds=feeds or 0,
+        items=total or 0,
+        unread=unread or 0,
+        favorite=favorite or 0,
+    )
 
 
 @app.get("/debug/pragma")
