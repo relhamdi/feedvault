@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlmodel import Session, col, func, select
+from sqlmodel import Session, col, func, select, update
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import get_or_404, paginate
@@ -232,6 +232,19 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                 normalized_items = [scraper.map(r) for r in raw_items]
             else:
                 normalized_items = scraper.run(job)
+
+                # Put items not found in FULL scraping to 'not public'
+                if job.mode == ScrapeMode.FULL and normalized_items:
+                    returned_ids = {n.external_id for n in normalized_items}
+                    session.exec(
+                        update(Item)
+                        .where(col(Item.feed_id) == feed.id)
+                        .where(col(Item.external_id).not_in(returned_ids))
+                        .where(col(Item.is_public).is_(True))
+                        # Set update date manually because bypassed by update method
+                        .values(is_public=False, updated_at=datetime.now(UTC))
+                    )
+                    session.commit()
 
             item_ids = []
             for normalized in normalized_items:
