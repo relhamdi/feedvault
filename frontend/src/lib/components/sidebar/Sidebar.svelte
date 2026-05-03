@@ -2,11 +2,13 @@
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
     import {
-        selectedFeedId,
+        collectionsMode,
         selectedSourceId,
+        selectSource,
         sourceRefreshTrigger,
     } from '../../stores/navigation.js';
     import { toastError } from '../../stores/toast.js';
+    import CollectionItem from '../collection/CollectionItem.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import LogsModal from '../modals/LogsModal.svelte';
     import SettingsModal from '../modals/SettingsModal.svelte';
@@ -50,11 +52,6 @@
         }
     }
 
-    function selectSource(id) {
-        selectedSourceId.set(id);
-        selectedFeedId.set(null); // Reset feed selection on source change
-    }
-
     function openCreate() {
         editingSource = null;
         showSourceModal = true;
@@ -79,8 +76,7 @@
             await sourcesApi.delete(toDelete.id);
             sources = sources.filter((s) => s.id !== toDelete.id);
             if ($selectedSourceId === toDelete.id) {
-                selectedSourceId.set(sources[0]?.id ?? null);
-                selectedFeedId.set(null);
+                selectSource(sources[0]?.id ?? null);
             }
         } catch (e) {
             console.error('Delete failed:', e.message);
@@ -111,7 +107,13 @@
         <ThemeToggle />
     </div>
 
-    <nav class="source-list">
+    <nav class="sidebar-items">
+        <!-- Collections entry -->
+        <CollectionItem />
+
+        <div class="section-divider"></div>
+
+        <!-- Sources entries -->
         {#if loading}
             <p class="sidebar-status">Loading...</p>
         {:else if error}
@@ -122,7 +124,7 @@
             {#each sources as source (source.id)}
                 <SourceItem
                     {source}
-                    active={$selectedSourceId === source.id}
+                    active={!$collectionsMode && $selectedSourceId === source.id}
                     on:select={() => selectSource(source.id)}
                     on:contextmenu={(e) => handleContextMenu(e.detail, source)}
                 />
@@ -214,7 +216,7 @@
         letter-spacing: 0.02em;
     }
 
-    .source-list {
+    .sidebar-items {
         flex: 1;
         overflow-y: auto;
         padding: 0.5rem 0;
@@ -273,5 +275,10 @@
     .icon-btn:hover {
         background: var(--bg-tertiary);
         color: var(--text-primary);
+    }
+
+    .section-divider {
+        height: 1px;
+        background: var(--border);
     }
 </style>
