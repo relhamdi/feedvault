@@ -102,13 +102,13 @@
     {loading}
 >
     {#if error}
-        <p class="form-error">{error}</p>
+        <p class="global-form-error">{error}</p>
     {/if}
 
     {#if loading}
         <p class="hint">Loading...</p>
     {:else}
-        <div class="form-row">
+        <div class="global-form-row">
             <FormField id="col-color" label="Color">
                 <input id="col-color" type="color" bind:value={form.color} />
             </FormField>
@@ -143,7 +143,7 @@
             </div>
         </FormField>
 
-        <div class="form-row">
+        <div class="global-form-row">
             <FormField
                 id="col-sources"
                 label="Filter by sources"

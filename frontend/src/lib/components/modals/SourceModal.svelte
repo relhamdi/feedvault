@@ -104,7 +104,7 @@
     {loading}
 >
     {#if error}
-        <p class="form-error">{error}</p>
+        <p class="global-form-error">{error}</p>
     {/if}
 
     <FormField id="source-name" label="Name" required>
@@ -138,7 +138,7 @@
         <input id="source-url" type="url" bind:value={form.base_url} placeholder="https://.../v1" />
     </FormField>
 
-    <div class="form-row">
+    <div class="global-form-row">
         <FormField id="source-color" label="Color">
             <input id="source-color" type="color" bind:value={form.color} />
         </FormField>
@@ -165,8 +165,8 @@
 
     <!-- Credentials — create mode only, shown if schema available -->
     {#if !isEdit && Object.keys(credentialsSchema).length > 0}
-        <div class="schema-section">
-            <p class="schema-section-title">Credentials</p>
+        <div class="global-schema-section">
+            <p class="global-schema-section-title">Credentials</p>
             {#each Object.entries(credentialsSchema) as [key, hint]}
                 <FormField id="cred-{key}" label={key} hint={String(hint)}>
                     <input
@@ -182,9 +182,9 @@
 
     <!-- Credentials — edit mode -->
     {#if isEdit}
-        <div class="schema-section">
-            <p class="schema-section-title">Credentials</p>
-            <p class="schema-section-hint">
+        <div class="global-schema-section">
+            <p class="global-schema-section-title">Credentials</p>
+            <p class="global-schema-section-hint">
                 To update credentials, enter new values below. Leave empty to keep existing.
             </p>
             {#each Object.entries(credentialsValues) as [key, _]}
@@ -193,7 +193,9 @@
                 </FormField>
             {/each}
             {#if Object.keys(credentialsValues).length === 0}
-                <p class="schema-section-hint">No credentials schema available for this source.</p>
+                <p class="global-schema-section-hint">
+                    No credentials schema available for this source.
+                </p>
             {/if}
         </div>
     {/if}

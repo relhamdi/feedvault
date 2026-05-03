@@ -139,7 +139,7 @@
     {loading}
 >
     {#if error}
-        <p class="form-error">{error}</p>
+        <p class="global-form-error">{error}</p>
     {/if}
 
     <FormField id="feed-name" label="Name" required>
@@ -150,7 +150,7 @@
         <input id="feed-url" type="url" bind:value={form.url} placeholder="https://..." />
     </FormField>
 
-    <div class="form-row">
+    <div class="global-form-row">
         <FormField id="feed-color" label="Color">
             <input id="feed-color" type="color" bind:value={form.color} />
         </FormField>
@@ -174,8 +174,8 @@
     </FormField>
 
     {#if Object.keys(paramsSchema).length > 0}
-        <div class="schema-section">
-            <p class="schema-section-title">Params</p>
+        <div class="global-schema-section">
+            <p class="global-schema-section-title">Params</p>
             {#each Object.entries(paramsSchema) as [key, hint]}
                 <FormField id="param-{key}" label={key} hint={String(hint)}>
                     {#if key === 'external_ids'}

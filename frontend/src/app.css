@@ -72,7 +72,7 @@ textarea {
 }
 
 /* Shared schema section (credentials, params) */
-.schema-section {
+.global-schema-section {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -82,7 +82,7 @@ textarea {
     background: var(--bg-secondary);
 }
 
-.schema-section-title {
+.global-schema-section-title {
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -90,19 +90,19 @@ textarea {
     color: var(--text-muted);
 }
 
-.schema-section-hint {
+.global-schema-section-hint {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-.form-row {
+.global-form-row {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0.75rem;
     align-items: end;
 }
 
-.form-error {
+.global-form-error {
     font-size: 0.875rem;
     color: var(--danger);
     padding: 0.5rem 0.75rem;
