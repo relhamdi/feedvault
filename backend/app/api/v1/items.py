@@ -1,5 +1,3 @@
-from enum import Enum
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
@@ -7,30 +5,20 @@ from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import (
+    apply_item_filters,
     apply_patch,
     delete_obj,
     get_or_404,
     get_or_404_with_options,
     paginate,
 )
+from app.core.sorting import ITEM_SORT_COLUMNS, ItemSortField, SortOrder
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
 from app.models.item_media import ItemMedia, ItemMediaCreate, ItemMediaRead
 from app.models.links import ItemCategoryLink
 from app.models.pagination import PaginatedResponse
-
-
-class ItemSortField(str, Enum):
-    SOURCE_PUBLISHED_AT = "source_published_at"
-    SOURCE_UPDATED_AT = "source_updated_at"
-    SCRAPED_AT = "scraped_at"
-    LAST_SCRAPED_AT = "last_scraped_at"
-
-
-class SortOrder(str, Enum):
-    ASC = "asc"
-    DESC = "desc"
 
 
 class ItemCreateWithRelations(BaseModel):
@@ -41,13 +29,6 @@ class ItemCreateWithRelations(BaseModel):
 
 router = APIRouter()
 
-SORT_COLUMNS = {
-    ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
-    ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
-    ItemSortField.SCRAPED_AT: Item.scraped_at,
-    ItemSortField.LAST_SCRAPED_AT: Item.last_scraped_at,
-}
-
 
 @router.get("/", response_model=PaginatedResponse[ItemRead])
 def list_items(
@@ -56,6 +37,8 @@ def list_items(
     is_favorite: bool | None = Query(default=None),
     is_nsfw: bool | None = Query(default=None),
     is_public: bool | None = Query(default=None),
+    search: str | None = Query(default=None),
+    tags: list[str] | None = Query(default=None),
     sort_by: ItemSortField = Query(default=ItemSortField.SOURCE_UPDATED_AT),
     sort_order: SortOrder = Query(default=SortOrder.DESC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
@@ -69,19 +52,20 @@ def list_items(
     )
     if feed_id is not None:
         query = query.where(Item.feed_id == feed_id)
-    if is_read is not None:
-        query = query.where(Item.is_read == is_read)
-    if is_favorite is not None:
-        query = query.where(Item.is_favorite == is_favorite)
-    if is_nsfw is not None:
-        query = query.where(Item.is_nsfw == is_nsfw)
-    if is_public is not None:
-        query = query.where(Item.is_public == is_public)
+    query = apply_item_filters(
+        query,
+        is_read,
+        is_favorite,
+        is_nsfw,
+        is_public,
+        search,
+        tags,
+    )
 
     order = (
-        col(SORT_COLUMNS[sort_by]).desc()
+        col(ITEM_SORT_COLUMNS[sort_by]).desc()
         if sort_order == SortOrder.DESC
-        else col(SORT_COLUMNS[sort_by]).asc()
+        else col(ITEM_SORT_COLUMNS[sort_by]).asc()
     )
     query = query.order_by(order)
     return paginate(session, query, limit, offset)

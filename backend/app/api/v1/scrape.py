@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlmodel import Session, col, func, select
+from sqlmodel import Session, col, func, select, update
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import get_or_404, paginate
@@ -105,6 +105,14 @@ def _log(
     session.commit()
 
 
+def _fail_job(session: Session, job_record: ScrapeJobRecord, message: str) -> None:
+    job_record.status = ScrapeJobStatus.ERROR
+    job_record.error_message = str(message)
+    job_record.finished_at = datetime.now(UTC)
+    session.add(job_record)
+    session.commit()
+
+
 def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
     """Background task: runs the full scraping pipeline for a feed."""
 
@@ -131,6 +139,16 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             session.commit()
             return
         assert source.id is not None
+
+        # No scraping on inactive source's feeds
+        if not source.is_active:
+            _fail_job(session, job_record, "Source is inactive")
+            return
+
+        # No scraping on inactive feeds
+        if not feed.is_active:
+            _fail_job(session, job_record, "Feed is inactive")
+            return
 
         # Mark job as running
         job_record.status = ScrapeJobStatus.RUNNING
@@ -215,6 +233,19 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             else:
                 normalized_items = scraper.run(job)
 
+                # Put items not found in FULL scraping to 'not public'
+                if job.mode == ScrapeMode.FULL and normalized_items:
+                    returned_ids = {n.external_id for n in normalized_items}
+                    session.exec(
+                        update(Item)
+                        .where(col(Item.feed_id) == feed.id)
+                        .where(col(Item.external_id).not_in(returned_ids))
+                        .where(col(Item.is_public).is_(True))
+                        # Set update date manually because bypassed by update method
+                        .values(is_public=False, updated_at=datetime.now(UTC))
+                    )
+                    session.commit()
+
             item_ids = []
             for normalized in normalized_items:
                 item = upsert_item(
@@ -255,11 +286,7 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             )
 
         except Exception as e:
-            job_record.status = ScrapeJobStatus.ERROR
-            job_record.finished_at = datetime.now(UTC)
-            job_record.error_message = str(e)
-            session.add(job_record)
-            session.commit()
+            _fail_job(session, job_record, str(e))
 
             _log(
                 session,
