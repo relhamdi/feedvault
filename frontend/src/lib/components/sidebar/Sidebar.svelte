@@ -7,6 +7,7 @@
         selectSource,
         sourceRefreshTrigger,
     } from '../../stores/navigation.js';
+    import { SOURCE_SORT_OPTIONS, sourceSort } from '../../stores/sorting.js';
     import { toastError } from '../../stores/toast.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import LogsModal from '../modals/LogsModal.svelte';
@@ -15,6 +16,7 @@
     import CollectionItem from '../sidebar/CollectionItem.svelte';
     import SourceItem from '../sidebar/SourceItem.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+    import SortControl from '../ui/SortControl.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
 
     let sources = [];
@@ -35,7 +37,7 @@
     // Context menu
     let contextMenu = null; // { x, y, source }
 
-    $: if ($sourceRefreshTrigger) loadSources();
+    $: if ($sourceRefreshTrigger || $sourceSort) loadSources();
 
     onMount(async () => {
         await loadSources();
@@ -43,7 +45,13 @@
 
     async function loadSources() {
         try {
-            sources = (await sourcesApi.list()).items;
+            sources = (
+                await sourcesApi.list({
+                    sort_by: $sourceSort.sort_by,
+                    sort_order: $sourceSort.sort_order,
+                    limit: 200,
+                })
+            ).items;
         } catch (e) {
             error = e.message;
             toastError('Failed to load sources');
@@ -112,6 +120,12 @@
         <CollectionItem />
 
         <div class="section-divider"></div>
+
+        <!-- Sorting options -->
+        <div class="list-controls">
+            <span class="list-label">Sources</span>
+            <SortControl sort={sourceSort} options={SOURCE_SORT_OPTIONS} />
+        </div>
 
         <!-- Sources entries -->
         {#if loading}
@@ -214,6 +228,21 @@
     .sidebar-title {
         color: var(--accent);
         letter-spacing: 0.02em;
+    }
+
+    .list-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 1rem 0.25rem;
+    }
+
+    .list-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
     }
 
     .sidebar-items {
