@@ -76,7 +76,7 @@ def get_collection_items(
     collection = get_or_404(session, Collection, collection_id)
     filters = _build_filters(collection)
     if not filters:
-        return []
+        return PaginatedResponse(items=[], total=0, limit=limit, offset=offset)
 
     if collection.filter_operator == FilterOperator.AND:
         query = select(Item).where(and_(*filters))
