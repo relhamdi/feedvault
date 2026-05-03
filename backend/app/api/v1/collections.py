@@ -10,7 +10,12 @@ from app.core.crud import (
     get_or_404,
     paginate,
 )
-from app.core.sorting import ITEM_SORT_COLUMNS, ItemSortField, SortOrder
+from app.core.sorting import (
+    ITEM_SORT_COLUMNS,
+    CollectionSortField,
+    ItemSortField,
+    SortOrder,
+)
 from app.core.tags import normalize_tags
 from app.database import get_session
 from app.models.collection import (
@@ -27,14 +32,27 @@ from app.models.stats import CollectionStats
 
 router = APIRouter()
 
+COLLECTION_SORT_COLUMNS = {
+    CollectionSortField.NAME: Collection.name,
+    CollectionSortField.CREATED_AT: Collection.created_at,
+    CollectionSortField.UPDATED_AT: Collection.updated_at,
+}
+
 
 @router.get("/", response_model=PaginatedResponse[CollectionRead])
 def list_collections(
+    sort_by: CollectionSortField = Query(default=CollectionSortField.NAME),
+    sort_order: SortOrder = Query(default=SortOrder.ASC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    query = select(Collection)
+    order = (
+        col(COLLECTION_SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(COLLECTION_SORT_COLUMNS[sort_by]).asc()
+    )
+    query = select(Collection).order_by(order)
     return paginate(session, query, limit, offset)
 
 

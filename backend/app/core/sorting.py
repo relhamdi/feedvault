@@ -24,6 +24,12 @@ class FeedSortField(str, Enum):
     IS_ACTIVE = "is_active"
 
 
+class CollectionSortField(str, Enum):
+    NAME = "name"
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+
+
 class ItemSortField(str, Enum):
     SOURCE_PUBLISHED_AT = "source_published_at"
     SOURCE_UPDATED_AT = "source_updated_at"
