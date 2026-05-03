@@ -122,7 +122,7 @@
         <div class="section-divider"></div>
 
         <!-- Sorting options -->
-        <div class="list-controls">
+        <div class="global-list-controls">
             <span class="list-label">Sources</span>
             <SortControl sort={sourceSort} options={SOURCE_SORT_OPTIONS} />
         </div>
@@ -228,13 +228,6 @@
     .sidebar-title {
         color: var(--accent);
         letter-spacing: 0.02em;
-    }
-
-    .list-controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.4rem 1rem 0.25rem;
     }
 
     .list-label {

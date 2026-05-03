@@ -111,6 +111,13 @@ textarea {
 }
 
 
+.global-list-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 1rem 0.25rem;
+}
+
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

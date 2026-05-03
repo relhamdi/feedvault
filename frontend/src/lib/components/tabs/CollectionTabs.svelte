@@ -123,7 +123,7 @@
     <button class="add-tab-btn" title="New collection" on:click={openCreate}>+</button>
 
     <!-- Sorting options -->
-    <div class="list-controls">
+    <div class="global-list-controls">
         <SortControl sort={collectionSort} options={COLLECTION_SORT_OPTIONS} />
     </div>
 
@@ -192,13 +192,6 @@
         border-bottom: 1px solid var(--border);
         background: var(--bg-secondary);
         min-height: 48px;
-    }
-
-    .list-controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.4rem 1rem 0.25rem;
     }
 
     .collection-tabs {
