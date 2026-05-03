@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
-from sqlmodel import Session, and_, col, or_, select
+from sqlalchemy import and_, or_
+from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
@@ -64,7 +65,7 @@ def delete_collection(collection_id: int, session: Session = Depends(get_session
     delete_obj(session, get_or_404(session, Collection, collection_id))
 
 
-@router.get("/{collection_id}/items", response_model=list[ItemRead])
+@router.get("/{collection_id}/items", response_model=PaginatedResponse[ItemRead])
 def get_collection_items(
     collection_id: int,
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
@@ -81,14 +82,8 @@ def get_collection_items(
     else:
         query = select(Item).where(or_(*filters))
 
-    query = (
-        query.distinct()
-        .order_by(col(Item.source_updated_at).desc())
-        .offset(offset)
-        .limit(limit)
-    )
-
-    return session.exec(query).all()
+    query = query.distinct().order_by(col(Item.source_updated_at).desc())
+    return paginate(session, query, limit, offset)
 
 
 def _build_filters(collection: Collection) -> list:
