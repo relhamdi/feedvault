@@ -3,6 +3,7 @@
     import { rootApi } from '../../api/client.js';
     import { dataApi } from '../../api/data.js';
     import { sourcesApi } from '../../api/sources.js';
+    import { DEFAULT_GRID_SIZE } from '../../config.js';
     import { triggerSourceRefresh } from '../../stores/navigation.js';
     import {
         getDefaultScrapeMode,
@@ -11,6 +12,7 @@
         setPollInterval,
     } from '../../stores/scraping.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
+    import { gridSize } from '../../stores/ui.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import ExportModal from '../modals/ExportModal.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
@@ -195,9 +197,25 @@
             <!-- General -->
             <section class="settings-section">
                 <h4 class="settings-section-title">General</h4>
+
                 <div class="settings-row">
                     <span class="settings-label">Theme</span>
                     <ThemeToggle />
+                </div>
+
+                <div class="settings-row">
+                    <div class="settings-label-group">
+                        <span class="settings-label">Card size</span>
+                        <span class="settings-hint">Minimum card width in pixels</span>
+                    </div>
+
+                    <div class="poll-input-row">
+                        <input type="range" min="180" max="480" step="20" bind:value={$gridSize} />
+                        <span class="settings-hint">{$gridSize}px</span>
+                        <button class="btn-save" on:click={() => gridSize.set(DEFAULT_GRID_SIZE)}
+                            >Reset</button
+                        >
+                    </div>
                 </div>
             </section>
 

@@ -11,6 +11,7 @@
     import { pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
+    import { gridSize } from '../../stores/ui.js';
     import ItemCard from '../item/ItemCard.svelte';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
@@ -173,7 +174,10 @@
         {:else if items.length === 0}
             <p class="grid-status">No items yet.</p>
         {:else}
-            <div class="item-grid">
+            <div
+                class="item-grid"
+                style="grid-template-columns: repeat(auto-fill, minmax({$gridSize}px, 1fr))"
+            >
                 {#each items as item (item.id)}
                     <ItemCard
                         {item}
@@ -254,7 +258,6 @@
 
     .item-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 1rem;
     }
 </style>
