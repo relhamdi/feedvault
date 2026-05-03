@@ -60,7 +60,7 @@
     }
 
     async function loadItems(feedId) {
-        if (loading || loadingMore) return;
+        if (!feedId || loading || loadingMore) return;
         offset === 0 ? (loading = true) : (loadingMore = true);
 
         error = null;
@@ -88,10 +88,6 @@
 
     function openItem(item) {
         selectedItem = item;
-    }
-
-    function closeModal() {
-        selectedItem = null;
     }
 
     function handleItemUpdate(updatedItem) {
@@ -163,6 +159,9 @@
             toastError(`Refresh failed: ${e.message}`);
         }
     }
+
+    // Show refresh option in context menu only when fetch_by_ids is supported
+    $: canRefresh = currentParamsSchema && 'external_ids' in currentParamsSchema;
 </script>
 
 {#if $selectedFeedId}
@@ -198,7 +197,7 @@
                 item={selectedItem}
                 feedId={$selectedFeedId}
                 paramsSchema={currentParamsSchema}
-                onClose={closeModal}
+                onClose={() => (selectedItem = null)}
                 onUpdate={handleItemUpdate}
             />
         {/if}
@@ -220,7 +219,7 @@
                 icon: contextMenu.item.is_favorite ? '♥' : '♡',
                 action: () => toggleFavorite(contextMenu.item),
             },
-            ...(currentParamsSchema && 'external_ids' in currentParamsSchema
+            ...(canRefresh
                 ? [
                       { separator: true },
                       {
