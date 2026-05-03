@@ -16,6 +16,7 @@
 <button
     class="source-item"
     class:active
+    class:inactive={!source.is_active}
     on:click={() => dispatch('select')}
     on:contextmenu={(e) => {
         e.preventDefault();
@@ -70,6 +71,14 @@
     .source-item.active {
         background: var(--bg-tertiary);
         box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .source-item.inactive {
+        opacity: 0.45;
+    }
+
+    .source-item.inactive:hover {
+        opacity: 0.65;
     }
 
     .source-icon {
