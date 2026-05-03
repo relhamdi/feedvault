@@ -9,12 +9,14 @@
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
     import { getDefaultScrapeMode, pollJob } from '../../stores/scraping.js';
+    import { FEED_SORT_OPTIONS, feedSort } from '../../stores/sorting.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import FeedModal from '../modals/FeedModal.svelte';
     import FeedTab from '../tabs/FeedTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+    import SortControl from '../ui/SortControl.svelte';
 
     let feeds = [];
     let loading = true;
@@ -37,10 +39,8 @@
 
     let currentSource = null;
     // Reload feeds whenever selected source changes
-    $: if ($selectedSourceId) {
-        loadSource($selectedSourceId);
-        loadFeeds($selectedSourceId);
-    }
+    $: if ($selectedSourceId) loadSource($selectedSourceId);
+    $: if ($selectedSourceId && $feedSort) loadFeeds($selectedSourceId);
 
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
@@ -57,7 +57,13 @@
         error = null;
         feeds = [];
         try {
-            feeds = (await feedsApi.list(sourceId)).items;
+            feeds = (
+                await feedsApi.list(sourceId, {
+                    sort_by: $feedSort.sort_by,
+                    sort_order: $feedSort.sort_order,
+                    limit: 200,
+                })
+            ).items;
             // Auto-select first feed if none selected
             if (feeds.length > 0 && !$selectedFeedId) {
                 selectedFeedId.set(feeds[0].id);
@@ -165,6 +171,12 @@
             disabled={!currentSource}
             on:click={openCreate}>+</button
         >
+
+        <!-- Sorting options -->
+        <div class="list-controls">
+            <SortControl sort={feedSort} options={FEED_SORT_OPTIONS} />
+        </div>
+
         <div class="feed-tabs" on:wheel={handleWheel}>
             {#if loading}
                 <span class="tabs-status">Loading...</span>
@@ -238,6 +250,13 @@
         border-bottom: 1px solid var(--border);
         background: var(--bg-secondary);
         min-height: 48px;
+    }
+
+    .list-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 1rem 0.25rem;
     }
 
     .feed-tabs {
