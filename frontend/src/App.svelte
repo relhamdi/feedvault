@@ -1,10 +1,10 @@
 <script>
     import { onMount } from 'svelte';
-    import CollectionItemGrid from './lib/components/collection/CollectionItemGrid.svelte';
-    import CollectionTabs from './lib/components/collection/CollectionTabs.svelte';
-    import FeedTabs from './lib/components/feed/FeedTabs.svelte';
+    import CollectionItemGrid from './lib/components/item/CollectionItemGrid.svelte';
     import ItemGrid from './lib/components/item/ItemGrid.svelte';
     import Sidebar from './lib/components/sidebar/Sidebar.svelte';
+    import CollectionTabs from './lib/components/tabs/CollectionTabs.svelte';
+    import FeedTabs from './lib/components/tabs/FeedTabs.svelte';
     import ToastContainer from './lib/components/ui/ToastContainer.svelte';
     import { collectionsMode } from './lib/stores/navigation.js';
     import { theme } from './lib/stores/theme.js';

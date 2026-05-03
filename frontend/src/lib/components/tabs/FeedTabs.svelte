@@ -11,9 +11,9 @@
     import { getDefaultScrapeMode, pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
-    import FeedTab from '../feed/FeedTab.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import FeedModal from '../modals/FeedModal.svelte';
+    import FeedTab from '../tabs/FeedTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
 
     let feeds = [];

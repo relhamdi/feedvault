@@ -9,9 +9,9 @@
     } from '../../stores/navigation.js';
     import { refreshCollectionStats } from '../../stores/stats.js';
     import { toastError } from '../../stores/toast.js';
-    import CollectionTab from '../collection/CollectionTab.svelte';
     import CollectionModal from '../modals/CollectionModal.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
+    import CollectionTab from '../tabs/CollectionTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
 
     let collections = [];

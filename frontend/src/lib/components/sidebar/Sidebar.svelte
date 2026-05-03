@@ -8,11 +8,11 @@
         sourceRefreshTrigger,
     } from '../../stores/navigation.js';
     import { toastError } from '../../stores/toast.js';
-    import CollectionItem from '../collection/CollectionItem.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import LogsModal from '../modals/LogsModal.svelte';
     import SettingsModal from '../modals/SettingsModal.svelte';
     import SourceModal from '../modals/SourceModal.svelte';
+    import CollectionItem from '../sidebar/CollectionItem.svelte';
     import SourceItem from '../sidebar/SourceItem.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';

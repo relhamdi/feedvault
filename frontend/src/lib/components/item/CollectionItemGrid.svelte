@@ -13,9 +13,9 @@
         refreshSourceStats,
     } from '../../stores/stats.js';
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
-    import ItemCard from '../item/ItemCard.svelte';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+    import ItemCard from './ItemCard.svelte';
 
     let items = [];
     let total = 0;
