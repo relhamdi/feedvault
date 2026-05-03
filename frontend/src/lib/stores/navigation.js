@@ -22,3 +22,28 @@ export function triggerFeedRefresh() {
 export function triggerCollectionRefresh() {
     collectionRefreshTrigger.update((n) => n + 1);
 }
+
+/**
+ * Switch to source mode
+ */
+export function selectSource(id) {
+    selectedSourceId.set(id);
+    selectedFeedId.set(null);
+    selectedCollectionId.set(null);
+    collectionsMode.set(false);
+}
+
+/**
+ * Switch to collections mode
+ */
+export function selectCollection(id) {
+    selectedCollectionId.set(id);
+    selectedSourceId.set(null);
+    selectedFeedId.set(null);
+    collectionsMode.set(true);
+}
+
+// Alias for clarity
+export function enterCollectionsMode() {
+    selectCollection(null);
+}
