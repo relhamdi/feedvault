@@ -1,5 +1,3 @@
-from enum import Enum
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
@@ -13,24 +11,13 @@ from app.core.crud import (
     get_or_404_with_options,
     paginate,
 )
+from app.core.sorting import ItemSortField, SortOrder
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
 from app.models.item_media import ItemMedia, ItemMediaCreate, ItemMediaRead
 from app.models.links import ItemCategoryLink
 from app.models.pagination import PaginatedResponse
-
-
-class ItemSortField(str, Enum):
-    SOURCE_PUBLISHED_AT = "source_published_at"
-    SOURCE_UPDATED_AT = "source_updated_at"
-    SCRAPED_AT = "scraped_at"
-    LAST_SCRAPED_AT = "last_scraped_at"
-
-
-class SortOrder(str, Enum):
-    ASC = "asc"
-    DESC = "desc"
 
 
 class ItemCreateWithRelations(BaseModel):
@@ -41,7 +28,7 @@ class ItemCreateWithRelations(BaseModel):
 
 router = APIRouter()
 
-SORT_COLUMNS = {
+ITEM_SORT_COLUMNS = {
     ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
     ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
     ItemSortField.SCRAPED_AT: Item.scraped_at,
@@ -79,9 +66,9 @@ def list_items(
         query = query.where(Item.is_public == is_public)
 
     order = (
-        col(SORT_COLUMNS[sort_by]).desc()
+        col(ITEM_SORT_COLUMNS[sort_by]).desc()
         if sort_order == SortOrder.DESC
-        else col(SORT_COLUMNS[sort_by]).asc()
+        else col(ITEM_SORT_COLUMNS[sort_by]).asc()
     )
     query = query.order_by(order)
     return paginate(session, query, limit, offset)
