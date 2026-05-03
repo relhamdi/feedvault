@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import case, func
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
+from app.core.sorting import FeedSortField, SortOrder
 from app.core.sources.registry import get_scraper_class
 from app.database import get_session
 from app.models.feed import Feed, FeedCreate, FeedCreateResponse, FeedRead, FeedUpdate
@@ -14,17 +15,33 @@ from app.models.stats import FeedStats
 
 router = APIRouter()
 
+FEED_SORT_COLUMNS = {
+    FeedSortField.NAME: Feed.name,
+    FeedSortField.LAST_SCRAPED_AT: Feed.last_scraped_at,
+    FeedSortField.CREATED_AT: Feed.created_at,
+    FeedSortField.UPDATED_AT: Feed.updated_at,
+    FeedSortField.IS_ACTIVE: Feed.is_active,
+}
+
 
 @router.get("/", response_model=PaginatedResponse[FeedRead])
 def list_feeds(
     source_id: int | None = Query(default=None),
+    sort_by: FeedSortField = Query(default=FeedSortField.NAME),
+    sort_order: SortOrder = Query(default=SortOrder.ASC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
+    order = (
+        col(FEED_SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(FEED_SORT_COLUMNS[sort_by]).asc()
+    )
     query = select(Feed)
     if source_id is not None:
         query = query.where(Feed.source_id == source_id)
+    query = query.order_by(order)
     return paginate(session, query, limit, offset)
 
 

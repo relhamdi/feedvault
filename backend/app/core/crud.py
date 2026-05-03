@@ -1,7 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy import func
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, SQLModel, col, or_, select
 
+from app.core.tags import normalize_tags
+from app.models.item import Item
 from app.models.pagination import PaginatedResponse
 
 
@@ -46,3 +48,33 @@ def delete_obj(session: Session, obj: SQLModel) -> None:
     """Delete given object from the database."""
     session.delete(obj)
     session.commit()
+
+
+def apply_item_filters(
+    query,
+    is_read: bool | None = None,
+    is_favorite: bool | None = None,
+    is_nsfw: bool | None = None,
+    is_public: bool | None = None,
+    search: str | None = None,
+    tags: list[str] | None = None,
+):
+    if is_read is not None:
+        query = query.where(Item.is_read == is_read)
+    if is_favorite is not None:
+        query = query.where(Item.is_favorite == is_favorite)
+    if is_nsfw is not None:
+        query = query.where(Item.is_nsfw == is_nsfw)
+    if is_public is not None:
+        query = query.where(Item.is_public == is_public)
+    if search:
+        query = query.where(
+            or_(
+                col(Item.title).ilike(f"%{search}%"),
+                col(Item.summary).ilike(f"%{search}%"),
+            )
+        )
+    if tags:
+        for tag in normalize_tags(tags):
+            query = query.where(col(Item.tags).contains(tag))
+    return query

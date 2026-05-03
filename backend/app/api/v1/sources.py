@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlalchemy import case, func
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.crypto import encrypt_credentials
+from app.core.sorting import SortOrder, SourceSortField
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
 from app.models.feed import Feed
@@ -14,12 +15,21 @@ from app.models.pagination import PaginatedResponse
 from app.models.source import Source, SourceCreate, SourceRead, SourceUpdate
 from app.models.stats import SourceStats
 
-router = APIRouter()
-
 
 class BootstrapAllResult(BaseModel):
     created: list[SourceRead]
     existing: list[SourceRead]
+
+
+router = APIRouter()
+
+SOURCE_SORT_COLUMNS = {
+    SourceSortField.NAME: Source.name,
+    SourceSortField.LAST_SCRAPED_AT: Source.last_scraped_at,
+    SourceSortField.CREATED_AT: Source.created_at,
+    SourceSortField.UPDATED_AT: Source.updated_at,
+    SourceSortField.IS_ACTIVE: Source.is_active,
+}
 
 
 @router.get("/registered-slugs")
@@ -30,11 +40,18 @@ def get_registered_slugs() -> list[str]:
 
 @router.get("/", response_model=PaginatedResponse[SourceRead])
 def list_sources(
+    sort_by: SourceSortField = Query(default=SourceSortField.NAME),
+    sort_order: SortOrder = Query(default=SortOrder.ASC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    query = select(Source)
+    order = (
+        col(SOURCE_SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(SOURCE_SORT_COLUMNS[sort_by]).asc()
+    )
+    query = select(Source).order_by(order)
     return paginate(session, query, limit, offset)
 
 

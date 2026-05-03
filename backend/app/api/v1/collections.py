@@ -1,8 +1,21 @@
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
 from sqlmodel import Session, and_, col, or_, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
+from app.core.crud import (
+    apply_item_filters,
+    apply_patch,
+    delete_obj,
+    get_or_404,
+    paginate,
+)
+from app.core.sorting import (
+    ITEM_SORT_COLUMNS,
+    CollectionSortField,
+    ItemSortField,
+    SortOrder,
+)
 from app.core.tags import normalize_tags
 from app.database import get_session
 from app.models.collection import (
@@ -15,17 +28,31 @@ from app.models.collection import (
 from app.models.feed import Feed
 from app.models.item import Item, ItemRead
 from app.models.pagination import PaginatedResponse
+from app.models.stats import CollectionStats
 
 router = APIRouter()
+
+COLLECTION_SORT_COLUMNS = {
+    CollectionSortField.NAME: Collection.name,
+    CollectionSortField.CREATED_AT: Collection.created_at,
+    CollectionSortField.UPDATED_AT: Collection.updated_at,
+}
 
 
 @router.get("/", response_model=PaginatedResponse[CollectionRead])
 def list_collections(
+    sort_by: CollectionSortField = Query(default=CollectionSortField.NAME),
+    sort_order: SortOrder = Query(default=SortOrder.ASC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
 ):
-    query = select(Collection)
+    order = (
+        col(COLLECTION_SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(COLLECTION_SORT_COLUMNS[sort_by]).asc()
+    )
+    query = select(Collection).order_by(order)
     return paginate(session, query, limit, offset)
 
 
@@ -64,9 +91,17 @@ def delete_collection(collection_id: int, session: Session = Depends(get_session
     delete_obj(session, get_or_404(session, Collection, collection_id))
 
 
-@router.get("/{collection_id}/items", response_model=list[ItemRead])
+@router.get("/{collection_id}/items", response_model=PaginatedResponse[ItemRead])
 def get_collection_items(
     collection_id: int,
+    is_read: bool | None = Query(default=None),
+    is_favorite: bool | None = Query(default=None),
+    is_nsfw: bool | None = Query(default=None),
+    is_public: bool | None = Query(default=None),
+    search: str | None = Query(default=None),
+    tags: list[str] | None = Query(default=None),
+    sort_by: ItemSortField = Query(default=ItemSortField.SOURCE_UPDATED_AT),
+    sort_order: SortOrder = Query(default=SortOrder.DESC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
@@ -74,21 +109,30 @@ def get_collection_items(
     collection = get_or_404(session, Collection, collection_id)
     filters = _build_filters(collection)
     if not filters:
-        return []
+        return PaginatedResponse(items=[], total=0, limit=limit, offset=offset)
 
     if collection.filter_operator == FilterOperator.AND:
         query = select(Item).where(and_(*filters))
     else:
         query = select(Item).where(or_(*filters))
 
-    query = (
-        query.distinct()
-        .order_by(col(Item.source_updated_at).desc())
-        .offset(offset)
-        .limit(limit)
+    query = apply_item_filters(
+        query,
+        is_read,
+        is_favorite,
+        is_nsfw,
+        is_public,
+        search,
+        tags,
     )
 
-    return session.exec(query).all()
+    order = (
+        col(ITEM_SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(ITEM_SORT_COLUMNS[sort_by]).asc()
+    )
+    query = query.distinct().order_by(order)
+    return paginate(session, query, limit, offset)
 
 
 def _build_filters(collection: Collection) -> list:
@@ -115,3 +159,29 @@ def _build_filters(collection: Collection) -> list:
         filters.append(or_(*tag_filters))
 
     return filters
+
+
+@router.get("/{collection_id}/stats", response_model=CollectionStats)
+def get_collection_stats(
+    collection_id: int,
+    session: Session = Depends(get_session),
+):
+    collection = get_or_404(session, Collection, collection_id)
+    filters = _build_filters(collection)
+    if not filters:
+        return CollectionStats(total=0, unread=0)
+
+    if collection.filter_operator == FilterOperator.AND:
+        base = select(Item).where(and_(*filters)).distinct()
+    else:
+        base = select(Item).where(or_(*filters)).distinct()
+
+    total = session.exec(select(func.count()).select_from(base.subquery())).one()
+    unread = session.exec(
+        select(func.count()).select_from(base.where(~Item.is_read).subquery())  # type: ignore
+    ).one()
+
+    return CollectionStats(
+        total=total or 0,
+        unread=unread or 0,
+    )
