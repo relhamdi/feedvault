@@ -5,13 +5,14 @@ from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import (
+    apply_item_filters,
     apply_patch,
     delete_obj,
     get_or_404,
     get_or_404_with_options,
     paginate,
 )
-from app.core.sorting import ItemSortField, SortOrder
+from app.core.sorting import ITEM_SORT_COLUMNS, ItemSortField, SortOrder
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
 from app.models.item import Item, ItemCreate, ItemRead, ItemUpdate
@@ -28,13 +29,6 @@ class ItemCreateWithRelations(BaseModel):
 
 router = APIRouter()
 
-ITEM_SORT_COLUMNS = {
-    ItemSortField.SOURCE_PUBLISHED_AT: Item.source_published_at,
-    ItemSortField.SOURCE_UPDATED_AT: Item.source_updated_at,
-    ItemSortField.SCRAPED_AT: Item.scraped_at,
-    ItemSortField.LAST_SCRAPED_AT: Item.last_scraped_at,
-}
-
 
 @router.get("/", response_model=PaginatedResponse[ItemRead])
 def list_items(
@@ -43,6 +37,8 @@ def list_items(
     is_favorite: bool | None = Query(default=None),
     is_nsfw: bool | None = Query(default=None),
     is_public: bool | None = Query(default=None),
+    search: str | None = Query(default=None),
+    tags: list[str] | None = Query(default=None),
     sort_by: ItemSortField = Query(default=ItemSortField.SOURCE_UPDATED_AT),
     sort_order: SortOrder = Query(default=SortOrder.DESC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
@@ -56,14 +52,15 @@ def list_items(
     )
     if feed_id is not None:
         query = query.where(Item.feed_id == feed_id)
-    if is_read is not None:
-        query = query.where(Item.is_read == is_read)
-    if is_favorite is not None:
-        query = query.where(Item.is_favorite == is_favorite)
-    if is_nsfw is not None:
-        query = query.where(Item.is_nsfw == is_nsfw)
-    if is_public is not None:
-        query = query.where(Item.is_public == is_public)
+    query = apply_item_filters(
+        query,
+        is_read,
+        is_favorite,
+        is_nsfw,
+        is_public,
+        search,
+        tags,
+    )
 
     order = (
         col(ITEM_SORT_COLUMNS[sort_by]).desc()

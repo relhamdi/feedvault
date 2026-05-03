@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, func, or_
-from sqlmodel import Session, col, select
+from sqlalchemy import func
+from sqlmodel import Session, and_, col, or_, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
+from app.core.crud import (
+    apply_item_filters,
+    apply_patch,
+    delete_obj,
+    get_or_404,
+    paginate,
+)
+from app.core.sorting import ITEM_SORT_COLUMNS, ItemSortField, SortOrder
 from app.core.tags import normalize_tags
 from app.database import get_session
 from app.models.collection import (
@@ -69,6 +76,14 @@ def delete_collection(collection_id: int, session: Session = Depends(get_session
 @router.get("/{collection_id}/items", response_model=PaginatedResponse[ItemRead])
 def get_collection_items(
     collection_id: int,
+    is_read: bool | None = Query(default=None),
+    is_favorite: bool | None = Query(default=None),
+    is_nsfw: bool | None = Query(default=None),
+    is_public: bool | None = Query(default=None),
+    search: str | None = Query(default=None),
+    tags: list[str] | None = Query(default=None),
+    sort_by: ItemSortField = Query(default=ItemSortField.SOURCE_UPDATED_AT),
+    sort_order: SortOrder = Query(default=SortOrder.DESC),
     limit: int = Query(default=DEFAULT_LIMIT, le=MAX_LIMIT),
     offset: int = Query(default=DEFAULT_OFFSET),
     session: Session = Depends(get_session),
@@ -83,7 +98,22 @@ def get_collection_items(
     else:
         query = select(Item).where(or_(*filters))
 
-    query = query.distinct().order_by(col(Item.source_updated_at).desc())
+    query = apply_item_filters(
+        query,
+        is_read,
+        is_favorite,
+        is_nsfw,
+        is_public,
+        search,
+        tags,
+    )
+
+    order = (
+        col(ITEM_SORT_COLUMNS[sort_by]).desc()
+        if sort_order == SortOrder.DESC
+        else col(ITEM_SORT_COLUMNS[sort_by]).asc()
+    )
+    query = query.distinct().order_by(order)
     return paginate(session, query, limit, offset)
 
 
