@@ -105,6 +105,14 @@ def _log(
     session.commit()
 
 
+def _fail_job(session: Session, job_record: ScrapeJobRecord, message: str) -> None:
+    job_record.status = ScrapeJobStatus.ERROR
+    job_record.error_message = str(message)
+    job_record.finished_at = datetime.now(UTC)
+    session.add(job_record)
+    session.commit()
+
+
 def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
     """Background task: runs the full scraping pipeline for a feed."""
 
@@ -255,11 +263,7 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             )
 
         except Exception as e:
-            job_record.status = ScrapeJobStatus.ERROR
-            job_record.finished_at = datetime.now(UTC)
-            job_record.error_message = str(e)
-            session.add(job_record)
-            session.commit()
+            _fail_job(session, job_record, str(e))
 
             _log(
                 session,
