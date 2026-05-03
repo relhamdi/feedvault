@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlmodel import Session, col, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
@@ -16,6 +16,7 @@ from app.models.collection import (
 from app.models.feed import Feed
 from app.models.item import Item, ItemRead
 from app.models.pagination import PaginatedResponse
+from app.models.stats import CollectionStats
 
 router = APIRouter()
 
@@ -110,3 +111,29 @@ def _build_filters(collection: Collection) -> list:
         filters.append(or_(*tag_filters))
 
     return filters
+
+
+@router.get("/{collection_id}/stats", response_model=CollectionStats)
+def get_collection_stats(
+    collection_id: int,
+    session: Session = Depends(get_session),
+):
+    collection = get_or_404(session, Collection, collection_id)
+    filters = _build_filters(collection)
+    if not filters:
+        return CollectionStats(total=0, unread=0)
+
+    if collection.filter_operator == FilterOperator.AND:
+        base = select(Item).where(and_(*filters)).distinct()
+    else:
+        base = select(Item).where(or_(*filters)).distinct()
+
+    total = session.exec(select(func.count()).select_from(base.subquery())).one()
+    unread = session.exec(
+        select(func.count()).select_from(base.where(~Item.is_read).subquery())  # type: ignore
+    ).one()
+
+    return CollectionStats(
+        total=total or 0,
+        unread=unread or 0,
+    )
