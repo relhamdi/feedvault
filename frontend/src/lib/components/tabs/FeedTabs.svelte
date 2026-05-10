@@ -129,7 +129,7 @@
 
     function handleContextMenu(e, feed) {
         activeContextMenuId.set(MENU_ID);
-        contextMenu = { x: e.detail.clientX, y: e.detail.clientY, feed };
+        contextMenu = { x: e.clientX, y: e.clientY, feed };
     }
 
     function handleWheel(e) {
@@ -211,7 +211,7 @@
                         scraping={scrapingFeedIds.has(feed.id)}
                         on:select={() => selectedFeedId.set(feed.id)}
                         on:scrape={() => startScrape(feed.id)}
-                        on:contextmenu={(e) => handleContextMenu(e, feed)}
+                        on:contextmenu={(e) => handleContextMenu(e.detail, feed)}
                     />
                 {/each}
             {/if}

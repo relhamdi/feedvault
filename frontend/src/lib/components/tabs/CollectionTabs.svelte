@@ -115,7 +115,7 @@
 
     function handleContextMenu(e, collection) {
         activeContextMenuId.set(MENU_ID);
-        contextMenu = { x: e.detail.clientX, y: e.detail.clientY, collection };
+        contextMenu = { x: e.clientX, y: e.clientY, collection };
     }
 
     function handleWheel(e) {
@@ -146,7 +146,7 @@
                     {collection}
                     active={$selectedCollectionId === collection.id}
                     on:select={() => selectCollection(collection.id)}
-                    on:contextmenu={(e) => handleContextMenu(e, collection)}
+                    on:contextmenu={(e) => handleContextMenu(e.detail, collection)}
                 />
             {/each}
         {/if}

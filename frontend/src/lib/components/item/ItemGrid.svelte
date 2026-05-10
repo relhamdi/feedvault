@@ -101,7 +101,6 @@
     }
 
     function handleCardContextMenu(e, item) {
-        e.preventDefault();
         activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.clientX, y: e.clientY, item };
     }
