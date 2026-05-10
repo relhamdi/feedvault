@@ -3,7 +3,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
-from app.core.image import download_and_compress, get_thumbnail_path
+from app.core.image import get_thumbnail_path
 from app.core.sources.models import NormalizedItem, RawAuthor, RawCategory, RawMedia
 from app.core.tags import normalize_tags
 from app.models.author import Author
@@ -150,7 +150,11 @@ def upsert_item(
     normalized: NormalizedItem,
     feed: Feed,
     source_slug: str,
-) -> Item | None:
+) -> tuple[Item | None, tuple[str, Path] | None]:
+    """
+    Returns (item, image_task) where image_task is (url, dest) or None.
+    Caller is responsible for batch downloading images.
+    """
     assert feed.id is not None
     now = datetime.now(UTC)
 
@@ -162,18 +166,17 @@ def upsert_item(
 
     # --- Thumbnail ---
     thumbnail_path = None
+    image_task: tuple[str, Path] | None = None
+
     if normalized.thumbnail_url:
         dest = get_thumbnail_path(
             source_slug,
             normalized.external_id,
             normalized.thumbnail_sub_path,
         )
+        thumbnail_path = str(Path(*dest.parts[1:]))
         if not dest.exists():
-            success = download_and_compress(normalized.thumbnail_url, dest)
-            if success:
-                thumbnail_path = str(Path(*dest.parts[1:]))
-        else:
-            thumbnail_path = str(Path(*dest.parts[1:]))
+            image_task = (normalized.thumbnail_url, dest)
 
     # --- Tags: custom + inherited from feed and source ---
     source = session.get(Source, feed.source_id)
@@ -191,7 +194,7 @@ def upsert_item(
     if not item:
         # Item was trashed before we ever scraped it — skip
         if normalized.partial:
-            return None
+            return None, None
 
         item = Item(
             feed_id=feed.id,
@@ -252,4 +255,4 @@ def upsert_item(
 
     session.commit()
     session.refresh(item)
-    return item
+    return item, image_task

@@ -1,12 +1,14 @@
 import importlib
 from datetime import UTC, datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, col, func, select, update
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import get_or_404, paginate
+from app.core.crud import delete_obj, get_or_404, paginate
+from app.core.image import download_and_compress_batch
 from app.core.sources.base import BaseSource
 from app.core.sources.models import (
     ScrapeJob,
@@ -184,6 +186,14 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             )
 
             scraper = _get_scraper(source, feed, session)
+            scraper._log_fn = lambda level, message: _log(
+                session,
+                job_record.id,  # type: ignore - Asserted before
+                feed.id,  # type: ignore - Asserted before
+                source.id,  # type: ignore - Asserted before
+                level,
+                message,
+            )
 
             # If feed.params contains external_ids and no explicit ones in payload, use them
             effective_external_ids = payload.external_ids or feed.params.get(
@@ -246,22 +256,76 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                     )
                     session.commit()
 
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    "FULL scan — marked missing items as non-public",
+                )
+
+            _log(
+                session,
+                job_record.id,
+                feed.id,
+                source.id,
+                LogLevel.INFO,
+                f"Fetch complete — {len(normalized_items)} items retrieved",
+            )
+
             item_ids = []
+            image_tasks: list[tuple[str, Path]] = []
+            skipped = 0
+
             for normalized in normalized_items:
-                item = upsert_item(
+                item, image_task = upsert_item(
                     session=session,
                     normalized=normalized,
                     feed=feed,
                     source_slug=source.slug,
                 )
                 if item is None:
+                    skipped += 1
                     continue
 
                 assert item.id is not None
                 item_ids.append(item.id)
+                if image_task:
+                    image_tasks.append(image_task)
                 job_record.last_external_id = normalized.external_id
                 session.add(job_record)
                 session.commit()
+
+            if skipped:
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.WARNING,
+                    f"{skipped} items skipped during upsert",
+                )
+
+            # Batch image download when upserts are done
+            if image_tasks:
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    f"Downloading {len(image_tasks)} images...",
+                )
+                success, failure = download_and_compress_batch(image_tasks)
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    f"Images done — {success} ok, {failure} failed",
+                )
 
             # Only update feed.last_scraped_at for full/incremental scrapes
             if not effective_external_ids:
@@ -296,6 +360,10 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                 LogLevel.ERROR,
                 f"Scraping failed — {e}",
             )
+
+        finally:
+            if hasattr(scraper, "close"):
+                scraper.close()
 
 
 @router.post("/", response_model=ScrapeJobRecordRead, status_code=202)
@@ -360,6 +428,14 @@ def list_jobs(
 @router.get("/jobs/{job_id}", response_model=ScrapeJobRecordRead)
 def get_job(job_id: int, session: Session = Depends(get_session)):
     return get_or_404(session, ScrapeJobRecord, job_id)
+
+
+@router.delete("/jobs/{job_id}", status_code=204)
+def delete_job(job_id: int, session: Session = Depends(get_session)):
+    job = get_or_404(session, ScrapeJobRecord, job_id)
+    if job.status == ScrapeJobStatus.RUNNING:
+        raise HTTPException(status_code=409, detail="Cannot delete a running job")
+    delete_obj(session, job)
 
 
 @router.get("/jobs/{job_id}/logs", response_model=list[ScrapeLogRead])

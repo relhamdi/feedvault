@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from pathlib import Path
 
@@ -32,6 +33,40 @@ def download_and_compress(url: str, dest: Path) -> bool:
 
     except Exception:
         return False
+
+
+def download_and_compress_batch(
+    tasks: list[tuple[str, Path]],
+    max_workers: int = 6,
+) -> tuple[int, int]:
+    """Download and compress multiple images in parallel.
+
+    Args:
+        tasks (list[tuple[str, Path]]): List of (url, dest_path) tuples.
+        max_workers (int, optional): Number of workers.
+            Defaults to 6.
+
+    Returns:
+        tuple[int, int]: Tuple (success_count, failure_count).
+    """
+    if not tasks:
+        return 0, 0
+
+    success = 0
+    failure = 0
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(download_and_compress, url, dest): (url, dest)
+            for url, dest in tasks
+        }
+        for future in as_completed(futures):
+            if future.result():
+                success += 1
+            else:
+                failure += 1
+
+    return success, failure
 
 
 def get_thumbnail_path(
