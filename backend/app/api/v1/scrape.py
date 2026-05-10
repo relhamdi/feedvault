@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, col, func, select, update
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
-from app.core.crud import get_or_404, paginate
+from app.core.crud import delete_obj, get_or_404, paginate
 from app.core.sources.base import BaseSource
 from app.core.sources.models import (
     ScrapeJob,
@@ -403,15 +403,14 @@ def list_jobs(
 def get_job(job_id: int, session: Session = Depends(get_session)):
     return get_or_404(session, ScrapeJobRecord, job_id)
 
+
 @router.delete("/jobs/{job_id}", status_code=204)
 def delete_job(job_id: int, session: Session = Depends(get_session)):
     job = get_or_404(session, ScrapeJobRecord, job_id)
     if job.status == ScrapeJobStatus.RUNNING:
-        raise HTTPException(
-            status_code=409,
-            detail="Cannot delete a running job"
-        )
+        raise HTTPException(status_code=409, detail="Cannot delete a running job")
     delete_obj(session, job)
+
 
 @router.get("/jobs/{job_id}/logs", response_model=list[ScrapeLogRead])
 def get_job_logs(job_id: int, session: Session = Depends(get_session)):
