@@ -108,8 +108,13 @@
             const jobs = jobsRes.items ?? jobsRes;
             totalJobs = jobsRes.total ?? jobs.length;
             activeJobs = jobs.filter((j) => j.status === 'running' || j.status === 'pending');
-            historyJobs = jobs.filter((j) => j.status !== 'running' && j.status !== 'pending');
-            historyOffset = historyJobs.length;
+            const newHistory = jobs.filter((j) => j.status !== 'running' && j.status !== 'pending');
+
+            // Remove possible duplicates
+            const existingIds = new Set(newHistory.map((j) => j.id));
+            historyJobs = [...newHistory, ...historyJobs.filter((j) => !existingIds.has(j.id))];
+
+            historyOffset = newHistory.length;
             sources = sourcesRes.items;
             feeds = feedsRes.items;
         } catch (e) {
@@ -128,7 +133,12 @@
             const jobs = (res.items ?? res).filter(
                 (j) => j.status !== 'running' && j.status !== 'pending'
             );
-            historyJobs = [...historyJobs, ...jobs];
+
+            // Remove possible duplicates
+            const existingIds = new Set(historyJobs.map((j) => j.id));
+            const newJobs = jobs.filter((j) => !existingIds.has(j.id));
+            historyJobs = [...historyJobs, ...newJobs];
+
             historyOffset += jobs.length;
         } catch (e) {
             console.error('Failed to load more jobs:', e.message);
