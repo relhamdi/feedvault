@@ -149,7 +149,7 @@
         opacity: 0.5;
     }
 
-    .scrape-btn:hover {
+    .scrape-btn:hover:not(.spinning) {
         background: var(--bg-tertiary);
         color: var(--accent);
         opacity: 1 !important;
