@@ -17,6 +17,7 @@
     class="source-item"
     class:active
     class:inactive={!source.is_active}
+    style={active ? `box-shadow: inset 3px 0 0 ${source.color ?? 'var(--accent)'}` : ''}
     on:click={() => dispatch('select')}
     on:contextmenu={(e) => {
         e.preventDefault();
@@ -70,7 +71,6 @@
 
     .source-item.active {
         background: var(--bg-tertiary);
-        box-shadow: inset 3px 0 0 var(--accent);
     }
 
     .source-item.inactive {
