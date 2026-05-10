@@ -259,6 +259,12 @@
         y={contextMenu.y}
         items={[
             {
+                label: 'Open in new tab',
+                icon: '↗',
+                action: () => window.open(contextMenu.item.url, '_blank', 'noopener,noreferrer'),
+            },
+            { separator: true },
+            {
                 label: contextMenu.item.is_read ? 'Mark as unread' : 'Mark as read',
                 icon: contextMenu.item.is_read ? '○' : '●',
                 action: () => toggleRead(contextMenu.item),
