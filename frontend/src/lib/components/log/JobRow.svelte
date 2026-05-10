@@ -12,6 +12,7 @@
     export let open = false;
     export let logs = null; // null = not loaded, [] = loaded empty
     export let loadingLogs = false;
+    export let onDelete = null;
 
     import { createEventDispatcher } from 'svelte';
     const dispatch = createEventDispatcher();
@@ -55,7 +56,17 @@
             {/if}
         </div>
     </div>
-    <span class="job-chevron" class:rotated={open}>▾</span>
+
+    <div class="job-actions">
+        {#if !isActive && onDelete}
+            <button
+                class="delete-btn"
+                title="Delete job"
+                on:click|stopPropagation={() => onDelete(job)}>✕</button
+            >
+        {/if}
+        <span class="job-chevron" class:rotated={open}>▾</span>
+    </div>
 </div>
 
 {#if open}
@@ -163,6 +174,34 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .job-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .delete-btn {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.35rem;
+        border-radius: var(--radius);
+        color: var(--text-muted);
+        opacity: 0;
+        transition:
+            opacity var(--transition),
+            color var(--transition),
+            background var(--transition);
+    }
+
+    .job-row:hover .delete-btn {
+        opacity: 1;
+    }
+
+    .delete-btn:hover {
+        color: var(--danger);
+        background: color-mix(in srgb, var(--danger) 10%, transparent);
     }
 
     .job-chevron {
