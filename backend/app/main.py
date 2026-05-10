@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
@@ -8,15 +10,44 @@ from sqlmodel import Session, case, func, select
 
 from app.api.v1.router import router as v1_router
 from app.config import settings
-from app.database import get_session
+from app.core.sources.models import ScrapeJobStatus
+from app.database import engine, get_session
 from app.models.feed import Feed
 from app.models.item import Item
+from app.models.scrape_job import ScrapeJobRecord
 from app.models.source import Source
 from app.models.stats import GlobalStats
+
+
+def recover_stuck_jobs():
+    with Session(engine) as session:
+        stuck = session.exec(
+            select(ScrapeJobRecord).where(
+                ScrapeJobRecord.status == ScrapeJobStatus.RUNNING
+            )
+        ).all()
+        for job in stuck:
+            job.status = ScrapeJobStatus.ERROR
+            job.error_message = "Job interrupted — server restarted"
+            job.finished_at = datetime.now(UTC)
+            session.add(job)
+        session.commit()
+        if stuck:
+            print(f"Recovered {len(stuck)} stuck jobs")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    recover_stuck_jobs()
+    yield
+    # Shutdown
+
 
 app = FastAPI(
     title="FeedVault",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
