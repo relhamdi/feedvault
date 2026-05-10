@@ -5,8 +5,13 @@
     import Sidebar from './lib/components/sidebar/Sidebar.svelte';
     import CollectionTabs from './lib/components/tabs/CollectionTabs.svelte';
     import FeedTabs from './lib/components/tabs/FeedTabs.svelte';
+    import FilterBar from './lib/components/ui/FilterBar.svelte';
     import ToastContainer from './lib/components/ui/ToastContainer.svelte';
-    import { collectionsMode } from './lib/stores/navigation.js';
+    import {
+        collectionsMode,
+        selectedCollectionId,
+        selectedFeedId,
+    } from './lib/stores/navigation.js';
     import { theme } from './lib/stores/theme.js';
 
     onMount(() => {
@@ -24,6 +29,9 @@
             <CollectionTabs />
         {:else}
             <FeedTabs />
+        {/if}
+        {#if $selectedFeedId || ($collectionsMode && $selectedCollectionId)}
+            <FilterBar />
         {/if}
         <div class="content-slot">
             {#if $collectionsMode}
