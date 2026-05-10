@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 
 export const selectedSourceId = writable(null);
 export const selectedFeedId = writable(null);
@@ -27,6 +27,8 @@ export function triggerCollectionRefresh() {
  * Switch to source mode
  */
 export function selectSource(id) {
+    if (get(selectedSourceId) === id && !get(collectionsMode)) return;
+
     selectedSourceId.set(id);
     selectedFeedId.set(null);
     selectedCollectionId.set(null);
@@ -37,6 +39,10 @@ export function selectSource(id) {
  * Switch to collections mode
  */
 export function selectCollection(id) {
+    if (get(collectionsMode)) {
+        if (id === null || get(selectedCollectionId) === id) return;
+    }
+
     selectedCollectionId.set(id);
     selectedSourceId.set(null);
     selectedFeedId.set(null);
