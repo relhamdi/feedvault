@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
+from typing import Callable
 
 from sqlmodel import Session
 
 from app.core.sources.models import NormalizedItem, RawItem, ScrapeJob, ScrapeMode
+from app.models.scrape_log import LogLevel
 from app.models.source import Source
 
 
@@ -16,11 +18,13 @@ class BaseSource(ABC):
         session: Session,
         source: Source,
         params: dict | None = None,
+        log_fn: Callable | None = None,
     ):
         self.feed_id = feed_id
         self.session = session
         self.source = source
         self.params = params or {}
+        self._log_fn = log_fn  # callable(level, message) | None
 
     @staticmethod
     def parse_feed_url(url: str) -> dict:
@@ -63,6 +67,11 @@ class BaseSource(ABC):
     def close(self) -> None:
         """Override in subclasses that hold resources (e.g. HTTP client)."""
         pass
+
+    def log(self, level: LogLevel, message: str) -> None:
+        """Callback used to log data during scrapings."""
+        if self._log_fn:
+            self._log_fn(level, message)
 
     def should_stop(self, item_date: datetime, job: ScrapeJob) -> bool:
         """
