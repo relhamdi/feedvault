@@ -25,6 +25,7 @@
         class="feed-tab"
         class:active
         class:inactive={!feed.is_active}
+        style={active ? `box-shadow: inset 0 -2px 0 ${feed.color ?? 'var(--accent)'}` : ''}
         on:click={() => dispatch('select')}
         title={feed.name}
     >
@@ -91,7 +92,6 @@
         background: var(--bg-tertiary);
         color: var(--text-primary);
         font-weight: 500;
-        box-shadow: inset 0 -2px 0 var(--accent);
     }
 
     .feed-tab.inactive {
