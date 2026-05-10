@@ -6,6 +6,7 @@
     import {
         selectedFeedId,
         selectedSourceId,
+        sourceRefreshTrigger,
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
     import { getDefaultScrapeMode, pollJob } from '../../stores/scraping.js';
@@ -45,6 +46,7 @@
 
     // Reload feeds whenever selected source changes
     $: if ($selectedSourceId) loadSource($selectedSourceId);
+    $: if ($selectedSourceId && $sourceRefreshTrigger) loadSource($selectedSourceId);
     $: if ($selectedSourceId && $feedSort) loadFeeds($selectedSourceId);
     $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 

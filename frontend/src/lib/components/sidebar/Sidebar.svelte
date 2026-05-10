@@ -6,6 +6,7 @@
         selectedSourceId,
         selectSource,
         sourceRefreshTrigger,
+        triggerSourceRefresh,
     } from '../../stores/navigation.js';
     import { SOURCE_SORT_OPTIONS, sourceSort } from '../../stores/sorting.js';
     import { toastError } from '../../stores/toast.js';
@@ -105,6 +106,7 @@
         } else {
             sources = [...sources, saved];
         }
+        triggerSourceRefresh();
     }
 
     function handleContextMenu(e, source) {
