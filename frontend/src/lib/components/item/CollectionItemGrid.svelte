@@ -5,8 +5,10 @@
     import { itemsApi } from '../../api/items.js';
     import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
+    import { itemFilters, resetFilters } from '../../stores/filters.js';
     import { collectionRefreshTrigger, selectedCollectionId } from '../../stores/navigation.js';
     import { pollJob } from '../../stores/scraping.js';
+    import { itemSort } from '../../stores/sorting.js';
     import {
         refreshCollectionStats,
         refreshFeedStats,
@@ -14,12 +16,15 @@
     } from '../../stores/stats.js';
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
     import { activeContextMenuId, gridSize } from '../../stores/ui.js';
+    import { parseTags } from '../../utils/format.js';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ItemCard from './ItemCard.svelte';
 
     // Unique ID per component
     const MENU_ID = 'collection-itemgrid';
+
+    let searchDebounce;
 
     let items = [];
     let total = 0;
@@ -43,9 +48,21 @@
     let refreshingItemIds = new Set();
     const cleanups = [];
 
-    $: if ($selectedCollectionId) resetAndLoad();
-    $: if ($collectionRefreshTrigger && $selectedCollectionId) resetAndLoad();
+    $: if ($selectedCollectionId) {
+        resetFilters();
+        resetAndLoad();
+    }
+    $: if ($collectionRefreshTrigger) resetAndLoad();
     $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
+
+    // Filters and sorting
+    $: if ($itemFilters || $itemSort) {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(
+            () => resetAndLoad(),
+            $itemFilters.search || $itemFilters.tags ? 300 : 0
+        );
+    }
 
     onMount(async () => {
         await buildFeedSourceMap();
@@ -88,9 +105,23 @@
         if (!$selectedCollectionId || loading || loadingMore) return;
         offset === 0 ? (loading = true) : (loadingMore = true);
 
+        const filters = {
+            limit,
+            offset,
+            sort_by: $itemSort.sort_by,
+            sort_order: $itemSort.sort_order,
+        };
+
+        if ($itemFilters.is_read !== null) filters.is_read = $itemFilters.is_read;
+        if ($itemFilters.is_favorite !== null) filters.is_favorite = $itemFilters.is_favorite;
+        if ($itemFilters.is_nsfw !== null) filters.is_nsfw = $itemFilters.is_nsfw;
+        if ($itemFilters.is_public !== null) filters.is_public = $itemFilters.is_public;
+        if ($itemFilters.search) filters.search = $itemFilters.search;
+        if ($itemFilters.tags) filters.tags = parseTags($itemFilters.tags);
+
         error = null;
         try {
-            const response = await collectionsApi.items($selectedCollectionId, { limit, offset });
+            const response = await collectionsApi.items($selectedCollectionId, filters);
             items = offset === 0 ? response.items : [...items, ...response.items];
             total = response.total;
             offset += response.items.length;

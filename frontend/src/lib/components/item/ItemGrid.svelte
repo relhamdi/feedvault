@@ -3,21 +3,26 @@
     import { itemsApi } from '../../api/items.js';
     import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
+    import { itemFilters, resetFilters } from '../../stores/filters.js';
     import {
         feedRefreshTrigger,
         selectedFeedId,
         selectedSourceId,
     } from '../../stores/navigation.js';
     import { pollJob } from '../../stores/scraping.js';
+    import { itemSort } from '../../stores/sorting.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
     import { activeContextMenuId, gridSize } from '../../stores/ui.js';
+    import { parseTags } from '../../utils/format.js';
     import ItemCard from '../item/ItemCard.svelte';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
 
     // Unique ID per component
     const MENU_ID = 'feed-itemgrid';
+
+    let searchDebounce;
 
     let items = [];
     let total = 0;
@@ -37,9 +42,22 @@
     let refreshingItemIds = new Set();
     const cleanups = [];
 
-    $: if ($selectedFeedId) loadParamsSchema();
-    $: if ($selectedFeedId || $feedRefreshTrigger) resetAndLoad($selectedFeedId);
+    $: if ($selectedFeedId) {
+        loadParamsSchema();
+        resetFilters();
+        resetAndLoad($selectedFeedId);
+    }
+    $: if ($feedRefreshTrigger) resetAndLoad($selectedFeedId);
     $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
+
+    // Filters and sorting
+    $: if ($itemFilters || $itemSort) {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(
+            () => resetAndLoad($selectedFeedId),
+            $itemFilters.search || $itemFilters.tags ? 300 : 0
+        );
+    }
 
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
@@ -66,9 +84,23 @@
         if (!feedId || loading || loadingMore) return;
         offset === 0 ? (loading = true) : (loadingMore = true);
 
+        const filters = {
+            limit,
+            offset,
+            sort_by: $itemSort.sort_by,
+            sort_order: $itemSort.sort_order,
+        };
+
+        if ($itemFilters.is_read !== null) filters.is_read = $itemFilters.is_read;
+        if ($itemFilters.is_favorite !== null) filters.is_favorite = $itemFilters.is_favorite;
+        if ($itemFilters.is_nsfw !== null) filters.is_nsfw = $itemFilters.is_nsfw;
+        if ($itemFilters.is_public !== null) filters.is_public = $itemFilters.is_public;
+        if ($itemFilters.search) filters.search = $itemFilters.search;
+        if ($itemFilters.tags) filters.tags = parseTags($itemFilters.tags);
+
         error = null;
         try {
-            const response = await itemsApi.list(feedId, { limit, offset });
+            const response = await itemsApi.list(feedId, filters);
             items = offset === 0 ? response.items : [...items, ...response.items];
             total = response.total;
             offset += response.items.length;
