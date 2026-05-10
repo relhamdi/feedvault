@@ -178,6 +178,7 @@
                     if (feedId === $selectedFeedId) triggerFeedRefresh();
                     refreshFeedStats(feedId);
                     refreshSourceStats($selectedSourceId);
+                    loadFeeds($selectedSourceId);
                 },
                 onError: (msg) => {
                     scrapingFeedIds.delete(feedId);
