@@ -221,11 +221,12 @@
         border-top: none;
         border-radius: 0 0 var(--radius) var(--radius);
         padding: 0.5rem 0.75rem;
-        min-height: 85px;
-        max-height: 300px;
+        min-height: 0;
+        max-height: 200px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        flex-shrink: 0;
         gap: 0.25rem;
         margin-top: -4px;
     }
