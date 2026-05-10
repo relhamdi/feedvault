@@ -13,10 +13,13 @@
         refreshSourceStats,
     } from '../../stores/stats.js';
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
-    import { gridSize } from '../../stores/ui.js';
+    import { activeContextMenuId, gridSize } from '../../stores/ui.js';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import ItemCard from './ItemCard.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'collection-itemgrid';
 
     let items = [];
     let total = 0;
@@ -42,6 +45,7 @@
 
     $: if ($selectedCollectionId) resetAndLoad();
     $: if ($collectionRefreshTrigger && $selectedCollectionId) resetAndLoad();
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onMount(async () => {
         await buildFeedSourceMap();
@@ -137,6 +141,7 @@
 
     function handleCardContextMenu(e, item) {
         e.preventDefault();
+        activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.clientX, y: e.clientY, item };
     }
 

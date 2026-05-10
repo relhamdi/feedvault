@@ -10,11 +10,15 @@
     import { COLLECTION_SORT_OPTIONS, collectionSort } from '../../stores/sorting.js';
     import { refreshCollectionStats } from '../../stores/stats.js';
     import { toastError } from '../../stores/toast.js';
+    import { activeContextMenuId } from '../../stores/ui.js';
     import CollectionModal from '../modals/CollectionModal.svelte';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import CollectionTab from '../tabs/CollectionTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import SortControl from '../ui/SortControl.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'collection-tabs';
 
     let collections = [];
     let loading = true;
@@ -32,6 +36,7 @@
 
     $: if (initialized && $collectionRefreshTrigger) loadCollections();
     $: if ($collectionSort) loadCollections();
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onMount(async () => {
         await loadCollections();
@@ -109,6 +114,7 @@
     }
 
     function handleContextMenu(e, collection) {
+        activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.detail.clientX, y: e.detail.clientY, collection };
     }
 

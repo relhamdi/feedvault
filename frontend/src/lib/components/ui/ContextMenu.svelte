@@ -1,4 +1,6 @@
 <script>
+    import { activeContextMenuId } from '../../stores/ui.js';
+
     export let x = 0;
     export let y = 0;
     export let items = []; // { label, action, danger? }
@@ -14,6 +16,7 @@
     }
 
     function handleOutsideClick() {
+        activeContextMenuId.set(null);
         onClose();
     }
 </script>

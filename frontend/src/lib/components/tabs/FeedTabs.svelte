@@ -12,11 +12,15 @@
     import { FEED_SORT_OPTIONS, feedSort } from '../../stores/sorting.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
+    import { activeContextMenuId } from '../../stores/ui.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import FeedModal from '../modals/FeedModal.svelte';
     import FeedTab from '../tabs/FeedTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
     import SortControl from '../ui/SortControl.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'feed-tabs';
 
     let feeds = [];
     let loading = true;
@@ -38,9 +42,11 @@
     const cleanups = [];
 
     let currentSource = null;
+
     // Reload feeds whenever selected source changes
     $: if ($selectedSourceId) loadSource($selectedSourceId);
     $: if ($selectedSourceId && $feedSort) loadFeeds($selectedSourceId);
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
@@ -122,6 +128,7 @@
     }
 
     function handleContextMenu(e, feed) {
+        activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.detail.clientX, y: e.detail.clientY, feed };
     }
 

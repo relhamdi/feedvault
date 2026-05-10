@@ -11,3 +11,5 @@ function persistedStore(key, defaultValue) {
 export const openMultiSelectId = writable(null);
 
 export const gridSize = persistedStore('ui:gridSize', 280); // px min card width
+
+export const activeContextMenuId = writable(null);

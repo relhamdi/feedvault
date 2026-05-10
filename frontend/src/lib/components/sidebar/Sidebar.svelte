@@ -9,6 +9,7 @@
     } from '../../stores/navigation.js';
     import { SOURCE_SORT_OPTIONS, sourceSort } from '../../stores/sorting.js';
     import { toastError } from '../../stores/toast.js';
+    import { activeContextMenuId } from '../../stores/ui.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import LogsModal from '../modals/LogsModal.svelte';
     import SettingsModal from '../modals/SettingsModal.svelte';
@@ -18,6 +19,9 @@
     import ContextMenu from '../ui/ContextMenu.svelte';
     import SortControl from '../ui/SortControl.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'sidebar';
 
     let sources = [];
     let loading = true;
@@ -38,6 +42,7 @@
     let contextMenu = null; // { x, y, source }
 
     $: if ($sourceRefreshTrigger || $sourceSort) loadSources();
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onMount(async () => {
         await loadSources();
@@ -104,6 +109,7 @@
 
     function handleContextMenu(e, source) {
         e.preventDefault();
+        activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.clientX, y: e.clientY, source };
     }
 </script>

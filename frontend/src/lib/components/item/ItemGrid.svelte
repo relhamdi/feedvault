@@ -11,10 +11,13 @@
     import { pollJob } from '../../stores/scraping.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
-    import { gridSize } from '../../stores/ui.js';
+    import { activeContextMenuId, gridSize } from '../../stores/ui.js';
     import ItemCard from '../item/ItemCard.svelte';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'feed-itemgrid';
 
     let items = [];
     let total = 0;
@@ -35,9 +38,8 @@
     const cleanups = [];
 
     $: if ($selectedFeedId) loadParamsSchema();
-
-    // Reload items whenever selected feed changes
     $: if ($selectedFeedId || $feedRefreshTrigger) resetAndLoad($selectedFeedId);
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
@@ -100,6 +102,7 @@
 
     function handleCardContextMenu(e, item) {
         e.preventDefault();
+        activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.clientX, y: e.clientY, item };
     }
 
