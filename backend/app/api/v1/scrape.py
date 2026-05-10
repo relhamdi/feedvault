@@ -1,5 +1,6 @@
 import importlib
 from datetime import UTC, datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -7,6 +8,7 @@ from sqlmodel import Session, col, func, select, update
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import delete_obj, get_or_404, paginate
+from app.core.image import download_and_compress_batch
 from app.core.sources.base import BaseSource
 from app.core.sources.models import (
     ScrapeJob,
@@ -273,9 +275,11 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             )
 
             item_ids = []
+            image_tasks: list[tuple[str, Path]] = []
             skipped = 0
+
             for normalized in normalized_items:
-                item = upsert_item(
+                item, image_task = upsert_item(
                     session=session,
                     normalized=normalized,
                     feed=feed,
@@ -287,6 +291,8 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
 
                 assert item.id is not None
                 item_ids.append(item.id)
+                if image_task:
+                    image_tasks.append(image_task)
                 job_record.last_external_id = normalized.external_id
                 session.add(job_record)
                 session.commit()
@@ -299,6 +305,26 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                     source.id,
                     LogLevel.WARNING,
                     f"{skipped} items skipped during upsert",
+                )
+
+            # Batch image download when upserts are done
+            if image_tasks:
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    f"Downloading {len(image_tasks)} images...",
+                )
+                success, failure = download_and_compress_batch(image_tasks)
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    f"Images done — {success} ok, {failure} failed",
                 )
 
             # Only update feed.last_scraped_at for full/incremental scrapes
