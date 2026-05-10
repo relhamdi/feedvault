@@ -4,6 +4,7 @@
     import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
     import { getPollInterval } from '../../stores/scraping.js';
+    import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import JobRow from '../log/JobRow.svelte';
     import MultiSelect from '../ui/MultiSelect.svelte';
@@ -80,6 +81,18 @@
         } finally {
             loadingLogs.delete(jobId);
             loadingLogs = loadingLogs;
+        }
+    }
+
+    async function deleteJob(job) {
+        try {
+            await scrapeApi.deleteJob(job.id);
+            historyJobs = historyJobs.filter((j) => j.id !== job.id);
+            if (openJobId === job.id) openJobId = null;
+            toastSuccess('Job deleted.');
+        } catch (e) {
+            console.error('Failed to delete job:', e.message);
+            toastError(`Failed to delete job: ${e.message}`);
         }
     }
 
@@ -234,6 +247,7 @@
                             open={openJobId === job.id}
                             logs={jobLogs[job.id] ?? null}
                             loadingLogs={loadingLogs.has(job.id)}
+                            onDelete={deleteJob}
                             on:toggle={() => toggleJob(job.id)}
                         />
                     {/each}
