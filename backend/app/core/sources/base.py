@@ -60,6 +60,10 @@ class BaseSource(ABC):
         """Convert a UNIX timestamp to a timezone-aware UTC datetime."""
         return datetime.fromtimestamp(ts, tz=UTC)
 
+    def close(self) -> None:
+        """Override in subclasses that hold resources (e.g. HTTP client)."""
+        pass
+
     def should_stop(self, item_date: datetime, job: ScrapeJob) -> bool:
         """
         Indicate whether incremental scraping should stop (when we reach items older than the last scrape).
