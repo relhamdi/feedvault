@@ -113,6 +113,16 @@
         activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.clientX, y: e.clientY, source };
     }
+
+    async function toggleSourceActive(source) {
+        try {
+            const updated = await sourcesApi.update(source.id, { is_active: !source.is_active });
+            handleSaved(updated);
+        } catch (e) {
+            console.error('Failed to update source:', e.message);
+            toastError(`Failed to update source: ${e.message}`);
+        }
+    }
 </script>
 
 <div class="sidebar">
@@ -176,6 +186,11 @@
         y={contextMenu.y}
         items={[
             { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.source) },
+            {
+                label: contextMenu.source.is_active ? 'Deactivate' : 'Activate',
+                icon: contextMenu.source.is_active ? '○' : '●',
+                action: () => toggleSourceActive(contextMenu.source),
+            },
             { separator: true },
             {
                 label: 'Delete',
