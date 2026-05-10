@@ -13,9 +13,20 @@ class APISource(BaseSource):
     default_headers: dict = {}
     default_params: dict = {}
     timeout: httpx.Timeout = DEFAULT_TIMEOUT
+    _client: httpx.Client | None = None
 
     def build_url(self, endpoint: str) -> str:
         return f"{self.source.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+
+    def get_client(self) -> httpx.Client:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.Client(timeout=self.timeout)
+        return self._client
+
+    def close(self) -> None:
+        if self._client and not self._client.is_closed:
+            self._client.close()
+            self._client = None
 
     def get(
         self,
@@ -25,11 +36,10 @@ class APISource(BaseSource):
         """Perform a GET request. Returns (data, headers)."""
         url = self.build_url(endpoint)
         merged_params = {**self.default_params, **(params or {})}
-        with httpx.Client(timeout=self.timeout) as client:
-            response = client.get(
-                url,
-                headers=self.default_headers,
-                params=merged_params,
-            )
-            response.raise_for_status()
-            return response.json(), response.headers
+        response = self.get_client().get(
+            url,
+            headers=self.default_headers,
+            params=merged_params,
+        )
+        response.raise_for_status()
+        return response.json(), response.headers
