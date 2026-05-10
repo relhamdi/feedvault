@@ -225,6 +225,12 @@
         x={contextMenu.x}
         y={contextMenu.y}
         items={[
+            {
+                label: 'Open in new tab',
+                icon: '↗',
+                action: () => window.open(contextMenu.feed.url, '_blank', 'noopener,noreferrer'),
+            },
+            { separator: true },
             { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.feed) },
             {
                 label: 'Scrape',
