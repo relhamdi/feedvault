@@ -127,6 +127,7 @@
             feeds = [...feeds, saved];
             selectedFeedId.set(saved.id);
         }
+        refreshFeedStats(saved.id);
     }
 
     function handleContextMenu(e, feed) {
