@@ -1,15 +1,11 @@
 import { DEFAULT_ITEMS_LIMIT } from '../config.js';
-import { api } from './client.js';
+import { api, buildItemsQuery } from './client.js';
 
 export const itemsApi = {
-    list: (feedId, params = {}) => {
-        const query = new URLSearchParams({
-            feed_id: feedId,
-            limit: DEFAULT_ITEMS_LIMIT,
-            ...params,
-        });
-        return api.get(`/items/?${query}`);
-    },
+    list: (feedId, params = {}) =>
+        api.get(
+            `/items/?${buildItemsQuery({ feed_id: feedId, limit: DEFAULT_ITEMS_LIMIT, ...params })}`
+        ),
     get: (id) => api.get(`/items/${id}`),
     update: (id, data) => api.patch(`/items/${id}`, data),
     scrape: (data) => api.post('/scrape/', data),
