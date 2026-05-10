@@ -184,6 +184,14 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
             )
 
             scraper = _get_scraper(source, feed, session)
+            scraper._log_fn = lambda level, message: _log(
+                session,
+                job_record.id,  # type: ignore - Asserted before
+                feed.id,  # type: ignore - Asserted before
+                source.id,  # type: ignore - Asserted before
+                level,
+                message,
+            )
 
             # If feed.params contains external_ids and no explicit ones in payload, use them
             effective_external_ids = payload.external_ids or feed.params.get(
@@ -246,7 +254,26 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                     )
                     session.commit()
 
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.INFO,
+                    "FULL scan — marked missing items as non-public",
+                )
+
+            _log(
+                session,
+                job_record.id,
+                feed.id,
+                source.id,
+                LogLevel.INFO,
+                f"Fetch complete — {len(normalized_items)} items retrieved",
+            )
+
             item_ids = []
+            skipped = 0
             for normalized in normalized_items:
                 item = upsert_item(
                     session=session,
@@ -255,6 +282,7 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                     source_slug=source.slug,
                 )
                 if item is None:
+                    skipped += 1
                     continue
 
                 assert item.id is not None
@@ -262,6 +290,16 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                 job_record.last_external_id = normalized.external_id
                 session.add(job_record)
                 session.commit()
+
+            if skipped:
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.WARNING,
+                    f"{skipped} items skipped during upsert",
+                )
 
             # Only update feed.last_scraped_at for full/incremental scrapes
             if not effective_external_ids:
@@ -296,6 +334,10 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                 LogLevel.ERROR,
                 f"Scraping failed — {e}",
             )
+
+        finally:
+            if hasattr(scraper, "close"):
+                scraper.close()
 
 
 @router.post("/", response_model=ScrapeJobRecordRead, status_code=202)
@@ -361,6 +403,15 @@ def list_jobs(
 def get_job(job_id: int, session: Session = Depends(get_session)):
     return get_or_404(session, ScrapeJobRecord, job_id)
 
+@router.delete("/jobs/{job_id}", status_code=204)
+def delete_job(job_id: int, session: Session = Depends(get_session)):
+    job = get_or_404(session, ScrapeJobRecord, job_id)
+    if job.status == ScrapeJobStatus.RUNNING:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete a running job"
+        )
+    delete_obj(session, job)
 
 @router.get("/jobs/{job_id}/logs", response_model=list[ScrapeLogRead])
 def get_job_logs(job_id: int, session: Session = Depends(get_session)):
