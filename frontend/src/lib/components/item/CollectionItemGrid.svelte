@@ -269,7 +269,7 @@
         {#if loadingMore}
             <p class="grid-status">Loading more...</p>
         {:else if items.length >= total && total > 0}
-            <p class="grid-status muted">{total} items</p>
+            <p class="grid-status muted">{total} item(s)</p>
         {/if}
 
         {#if selectedItem}
