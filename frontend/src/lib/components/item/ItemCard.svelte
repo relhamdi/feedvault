@@ -118,6 +118,10 @@
         text-align: left;
     }
 
+    .card-btn:focus:not(:focus-visible) {
+        outline: none;
+    }
+
     /* Thumbnail */
     .card-thumbnail {
         position: relative;
