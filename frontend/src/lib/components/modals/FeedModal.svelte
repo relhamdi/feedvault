@@ -1,7 +1,7 @@
 <script>
     import { feedsApi } from '../../api/feeds.js';
     import { sourcesApi } from '../../api/sources.js';
-    import { toastError } from '../../stores/toast.js';
+    import { toastError, toastWarning } from '../../stores/toast.js';
     import { parseTags } from '../../utils/format.js';
     import FormModal from '../modals/FormModal.svelte';
     import FormField from '../ui/FormField.svelte';
