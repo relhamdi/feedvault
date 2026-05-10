@@ -141,6 +141,16 @@
         e.currentTarget.scrollLeft += e.deltaY;
     }
 
+    async function toggleFeedActive(feed) {
+        try {
+            const updated = await feedsApi.update(feed.id, { is_active: !feed.is_active });
+            handleSaved(updated);
+        } catch (e) {
+            console.error('Failed to update feed:', e.message);
+            toastError(`Failed to update feed: ${e.message}`);
+        }
+    }
+
     async function startScrape(feedId) {
         // Check if source is inactive
         if (!currentSource?.is_active) {
@@ -235,6 +245,11 @@
             },
             { separator: true },
             { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.feed) },
+            {
+                label: contextMenu.feed.is_active ? 'Deactivate' : 'Activate',
+                icon: contextMenu.feed.is_active ? '○' : '●',
+                action: () => toggleFeedActive(contextMenu.feed),
+            },
             {
                 label: 'Scrape',
                 icon: '⟳',
