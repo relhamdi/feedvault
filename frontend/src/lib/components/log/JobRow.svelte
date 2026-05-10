@@ -1,4 +1,5 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
     import {
         formatDuration,
         jobStatusClass,
@@ -14,7 +15,6 @@
     export let loadingLogs = false;
     export let onDelete = null;
 
-    import { createEventDispatcher } from 'svelte';
     const dispatch = createEventDispatcher();
 
     $: sourceName = sources.find((s) => s.id === job.source_id)?.name ?? `Source #${job.source_id}`;
