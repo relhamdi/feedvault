@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import CollectionItemGrid from './lib/components/item/CollectionItemGrid.svelte';
-    import ItemGrid from './lib/components/item/ItemGrid.svelte';
+    import FeedItemGrid from './lib/components/item/FeedItemGrid.svelte';
     import Sidebar from './lib/components/sidebar/Sidebar.svelte';
     import CollectionTabs from './lib/components/tabs/CollectionTabs.svelte';
     import FeedTabs from './lib/components/tabs/FeedTabs.svelte';
@@ -37,7 +37,7 @@
             {#if $collectionsMode}
                 <CollectionItemGrid />
             {:else}
-                <ItemGrid />
+                <FeedItemGrid />
             {/if}
         </div>
     </main>

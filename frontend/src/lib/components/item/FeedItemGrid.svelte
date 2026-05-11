@@ -1,7 +1,6 @@
 <script>
     import { onDestroy } from 'svelte';
     import { itemsApi } from '../../api/items.js';
-    import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
     import { itemFilters, resetFilters } from '../../stores/filters.js';
     import {
@@ -9,104 +8,89 @@
         selectedFeedId,
         selectedSourceId,
     } from '../../stores/navigation.js';
-    import { pollJob } from '../../stores/scraping.js';
     import { itemSort } from '../../stores/sorting.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
-    import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
+    import { toastError } from '../../stores/toast.js';
     import { activeContextMenuId, gridSize } from '../../stores/ui.js';
-    import { parseTags } from '../../utils/format.js';
+    import {
+        buildContextMenuItems,
+        buildItemParams,
+        refreshItem as doRefreshItem,
+        toggleFavorite as doToggleFavorite,
+        toggleRead as doToggleRead,
+    } from '../../utils/itemGridState.js';
     import ItemCard from '../item/ItemCard.svelte';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
 
-    // Unique ID per component
     const MENU_ID = 'feed-itemgrid';
 
     let searchDebounce;
-
     let items = [];
     let total = 0;
     let offset = 0;
-    const limit = 50;
     let loading = false;
     let loadingMore = false;
     let error = null;
 
     let selectedItem = null;
     let contextMenu = null;
-
-    // Loaded schema for item modal
     let currentParamsSchema = {};
-
-    // Scraping
     let refreshingItemIds = new Set();
     const cleanups = [];
 
     $: if ($selectedFeedId) {
         loadParamsSchema();
         resetFilters();
-        resetAndLoad($selectedFeedId);
+        resetAndLoad();
     }
-    $: if ($feedRefreshTrigger) resetAndLoad($selectedFeedId);
+    $: if ($feedRefreshTrigger) resetAndLoad();
     $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
-
-    // Filters and sorting
     $: if ($itemFilters || $itemSort) {
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(
-            () => resetAndLoad($selectedFeedId),
+            resetAndLoad,
             $itemFilters.search || $itemFilters.tags ? 300 : 0
         );
     }
+
+    $: canRefresh = 'external_ids' in currentParamsSchema;
 
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
     async function loadParamsSchema() {
         try {
-            // Get source slug from current source
             const source = await sourcesApi.get($selectedSourceId);
             currentParamsSchema = await sourcesApi.paramsSchema(source.slug);
         } catch (e) {
-            console.warn(`Failed to load paramsSchema for ${selectedSourceId}:`, e.message);
+            console.warn(`Failed to load params schema for source ${source.slug}:`, e.message);
             currentParamsSchema = {};
         }
     }
 
-    async function resetAndLoad(feedId) {
-        if (!feedId) return;
+    async function resetAndLoad() {
+        if (!$selectedFeedId) return;
         offset = 0;
         items = [];
         total = 0;
-        await loadItems(feedId);
+        await loadItems();
     }
 
-    async function loadItems(feedId) {
-        if (!feedId || loading || loadingMore) return;
+    async function loadItems() {
+        if (!$selectedFeedId || loading || loadingMore) return;
         offset === 0 ? (loading = true) : (loadingMore = true);
-
-        const filters = {
-            limit,
-            offset,
-            sort_by: $itemSort.sort_by,
-            sort_order: $itemSort.sort_order,
-        };
-
-        if ($itemFilters.is_read !== null) filters.is_read = $itemFilters.is_read;
-        if ($itemFilters.is_favorite !== null) filters.is_favorite = $itemFilters.is_favorite;
-        if ($itemFilters.is_nsfw !== null) filters.is_nsfw = $itemFilters.is_nsfw;
-        if ($itemFilters.is_public !== null) filters.is_public = $itemFilters.is_public;
-        if ($itemFilters.search) filters.search = $itemFilters.search;
-        if ($itemFilters.tags) filters.tags = parseTags($itemFilters.tags);
-
         error = null;
         try {
-            const response = await itemsApi.list(feedId, filters);
+            const response = await itemsApi.list(
+                $selectedFeedId,
+                buildItemParams($itemFilters, $itemSort, offset)
+            );
             items = offset === 0 ? response.items : [...items, ...response.items];
             total = response.total;
             offset += response.items.length;
         } catch (e) {
             error = e.message;
-            toastError('Failed to load items');
+            toastError('Failed to load collection items');
         } finally {
             loading = false;
             loadingMore = false;
@@ -117,12 +101,8 @@
         const el = e.target;
         const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
         if (nearBottom && items.length < total && !loadingMore) {
-            loadItems($selectedFeedId);
+            loadItems();
         }
-    }
-
-    function openItem(item) {
-        selectedItem = item;
     }
 
     function handleItemUpdate(updatedItem) {
@@ -138,65 +118,37 @@
     }
 
     async function toggleRead(item) {
-        try {
-            const updated = { ...item, is_read: !item.is_read };
-            await itemsApi.update(item.id, { is_read: updated.is_read });
+        await doToggleRead(item, items, (updated) => {
             items = items.map((i) => (i.id === item.id ? updated : i));
             refreshFeedStats($selectedFeedId);
             refreshSourceStats($selectedSourceId);
-        } catch (e) {
-            console.error('Failed to update item:', e.message);
-            toastError(`Failed to update item: ${e.message}`);
-        }
+        });
     }
 
     async function toggleFavorite(item) {
-        try {
-            const updated = { ...item, is_favorite: !item.is_favorite };
-            await itemsApi.update(item.id, { is_favorite: updated.is_favorite });
+        await doToggleFavorite(item, (updated) => {
             items = items.map((i) => (i.id === item.id ? updated : i));
-        } catch (e) {
-            console.error('Failed to update item:', e.message);
-            toastError(`Failed to update item: ${e.message}`);
-        }
+        });
     }
 
     async function refreshItem(item) {
         if (refreshingItemIds.has(item.id)) return;
         refreshingItemIds.add(item.id);
         refreshingItemIds = refreshingItemIds;
-        try {
-            const job = await scrapeApi.scrape({
-                feed_id: $selectedFeedId,
-                mode: 'FULL',
-                external_ids: [item.external_id],
-            });
-            toastInfo(`Refreshing item "${item.title}"...`);
-            const cleanup = pollJob(job.id, {
-                onDone: async () => {
-                    refreshingItemIds.delete(item.id);
-                    refreshingItemIds = refreshingItemIds;
-                    toastSuccess(`"${item.title}" refreshed`);
-                    const updated = await itemsApi.get(item.id);
-                    items = items.map((i) => (i.id === updated.id ? updated : i));
-                },
-                onError: (msg) => {
-                    refreshingItemIds.delete(item.id);
-                    refreshingItemIds = refreshingItemIds;
-                    toastError(`Refresh error: ${msg}`);
-                },
-            });
-            cleanups.push(cleanup);
-        } catch (e) {
-            refreshingItemIds.delete(item.id);
-            refreshingItemIds = refreshingItemIds;
-            console.error('Refresh failed:', e.message);
-            toastError(`Refresh failed: ${e.message}`);
-        }
-    }
 
-    // Show refresh option in context menu only when fetch_by_ids is supported
-    $: canRefresh = currentParamsSchema && 'external_ids' in currentParamsSchema;
+        const cleanup = await doRefreshItem(item, {
+            onDone: (updated) => {
+                refreshingItemIds.delete(item.id);
+                refreshingItemIds = refreshingItemIds;
+                items = items.map((i) => (i.id === updated.id ? updated : i));
+            },
+            onError: () => {
+                refreshingItemIds.delete(item.id);
+                refreshingItemIds = refreshingItemIds;
+            },
+        });
+        if (cleanup) cleanups.push(cleanup);
+    }
 </script>
 
 {#if $selectedFeedId}
@@ -206,7 +158,7 @@
         {:else if error}
             <p class="grid-status error">{error}</p>
         {:else if items.length === 0}
-            <p class="grid-status">No items yet.</p>
+            <p class="grid-status">No items here.</p>
         {:else}
             <div
                 class="item-grid"
@@ -215,7 +167,7 @@
                 {#each items as item (item.id)}
                     <ItemCard
                         {item}
-                        on:click={() => openItem(item)}
+                        on:click={() => (selectedItem = item)}
                         on:contextmenu={(e) => handleCardContextMenu(e.detail, item)}
                     />
                 {/each}
@@ -244,34 +196,13 @@
     <ContextMenu
         x={contextMenu.x}
         y={contextMenu.y}
-        items={[
-            {
-                label: 'Open in new tab',
-                icon: '↗',
-                action: () => window.open(contextMenu.item.url, '_blank', 'noopener,noreferrer'),
-            },
-            { separator: true },
-            {
-                label: contextMenu.item.is_read ? 'Mark as unread' : 'Mark as read',
-                icon: contextMenu.item.is_read ? '○' : '●',
-                action: () => toggleRead(contextMenu.item),
-            },
-            {
-                label: contextMenu.item.is_favorite ? 'Remove from favorites' : 'Add to favorites',
-                icon: contextMenu.item.is_favorite ? '♥' : '♡',
-                action: () => toggleFavorite(contextMenu.item),
-            },
-            ...(canRefresh
-                ? [
-                      { separator: true },
-                      {
-                          label: 'Refresh item',
-                          icon: '⟳',
-                          action: () => refreshItem(contextMenu.item),
-                      },
-                  ]
-                : []),
-        ]}
+        items={buildContextMenuItems({
+            item: contextMenu.item,
+            canRefresh,
+            onToggleRead: toggleRead,
+            onToggleFavorite: toggleFavorite,
+            onRefresh: refreshItem,
+        })}
         onClose={() => (contextMenu = null)}
     />
 {/if}

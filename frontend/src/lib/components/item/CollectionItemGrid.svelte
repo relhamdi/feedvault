@@ -2,49 +2,44 @@
     import { onDestroy, onMount } from 'svelte';
     import { collectionsApi } from '../../api/collections.js';
     import { feedsApi } from '../../api/feeds.js';
-    import { itemsApi } from '../../api/items.js';
-    import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
     import { itemFilters, resetFilters } from '../../stores/filters.js';
     import { collectionRefreshTrigger, selectedCollectionId } from '../../stores/navigation.js';
-    import { pollJob } from '../../stores/scraping.js';
     import { itemSort } from '../../stores/sorting.js';
     import {
         refreshCollectionStats,
         refreshFeedStats,
         refreshSourceStats,
     } from '../../stores/stats.js';
-    import { toastError, toastInfo, toastSuccess } from '../../stores/toast.js';
+    import { toastError } from '../../stores/toast.js';
     import { activeContextMenuId, gridSize } from '../../stores/ui.js';
-    import { parseTags } from '../../utils/format.js';
+    import {
+        buildContextMenuItems,
+        buildItemParams,
+        refreshItem as doRefreshItem,
+        toggleFavorite as doToggleFavorite,
+        toggleRead as doToggleRead,
+    } from '../../utils/itemGridState.js';
+    import ItemCard from '../item/ItemCard.svelte';
     import ItemModal from '../modals/ItemModal.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import ItemCard from './ItemCard.svelte';
 
-    // Unique ID per component
     const MENU_ID = 'collection-itemgrid';
 
     let searchDebounce;
-
     let items = [];
     let total = 0;
     let offset = 0;
-    const limit = 50;
     let loading = false;
     let loadingMore = false;
     let error = null;
 
     let selectedItem = null;
     let contextMenu = null;
-
-    // Map feedId -> { name, color, slug, sourceId }
-    let feedSourceMap = {};
-    // sourceSlug -> paramsSchema (cached)
-    let paramsSchemaCache = {};
-    // sourceSlug -> paramsSchema for selectedItem (for ItemModal)
     let selectedItemSchema = {};
 
-    // Scraping
+    let feedSourceMap = {};
+    let paramsSchemaCache = {};
     let refreshingItemIds = new Set();
     const cleanups = [];
 
@@ -54,20 +49,15 @@
     }
     $: if ($collectionRefreshTrigger) resetAndLoad();
     $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
-
-    // Filters and sorting
     $: if ($itemFilters || $itemSort) {
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(
-            () => resetAndLoad(),
+            resetAndLoad,
             $itemFilters.search || $itemFilters.tags ? 300 : 0
         );
     }
 
-    onMount(async () => {
-        await buildFeedSourceMap();
-    });
-
+    onMount(buildFeedSourceMap);
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
     async function buildFeedSourceMap() {
@@ -94,7 +84,21 @@
         }
     }
 
+    async function getParamsSchema(item) {
+        const slug = feedSourceMap[item.feed_id]?.slug;
+        if (!slug) return {};
+        if (paramsSchemaCache[slug]) return paramsSchemaCache[slug];
+        try {
+            paramsSchemaCache[slug] = await sourcesApi.paramsSchema(slug);
+        } catch (e) {
+            console.warn(`Failed to load param schema for feed ${item.feed_id}:`, e.message);
+            paramsSchemaCache[slug] = {};
+        }
+        return paramsSchemaCache[slug];
+    }
+
     async function resetAndLoad() {
+        if (!$selectedCollectionId) return;
         offset = 0;
         items = [];
         total = 0;
@@ -104,24 +108,12 @@
     async function loadItems() {
         if (!$selectedCollectionId || loading || loadingMore) return;
         offset === 0 ? (loading = true) : (loadingMore = true);
-
-        const filters = {
-            limit,
-            offset,
-            sort_by: $itemSort.sort_by,
-            sort_order: $itemSort.sort_order,
-        };
-
-        if ($itemFilters.is_read !== null) filters.is_read = $itemFilters.is_read;
-        if ($itemFilters.is_favorite !== null) filters.is_favorite = $itemFilters.is_favorite;
-        if ($itemFilters.is_nsfw !== null) filters.is_nsfw = $itemFilters.is_nsfw;
-        if ($itemFilters.is_public !== null) filters.is_public = $itemFilters.is_public;
-        if ($itemFilters.search) filters.search = $itemFilters.search;
-        if ($itemFilters.tags) filters.tags = parseTags($itemFilters.tags);
-
         error = null;
         try {
-            const response = await collectionsApi.items($selectedCollectionId, filters);
+            const response = await collectionsApi.items(
+                $selectedCollectionId,
+                buildItemParams($itemFilters, $itemSort, offset)
+            );
             items = offset === 0 ? response.items : [...items, ...response.items];
             total = response.total;
             offset += response.items.length;
@@ -142,25 +134,6 @@
         }
     }
 
-    async function getParamsSchema(item) {
-        const sourceInfo = feedSourceMap[item.feed_id];
-        if (!sourceInfo) return {};
-        const slug = sourceInfo.slug;
-        if (paramsSchemaCache[slug]) return paramsSchemaCache[slug];
-        try {
-            paramsSchemaCache[slug] = await sourcesApi.paramsSchema(slug);
-        } catch (e) {
-            console.warn('Failed to fetch paramsSchema:', e.message);
-            paramsSchemaCache[slug] = {};
-        }
-        return paramsSchemaCache[slug];
-    }
-
-    async function openItem(item) {
-        selectedItem = item;
-        selectedItemSchema = await getParamsSchema(item);
-    }
-
     function handleItemUpdate(updatedItem) {
         items = items.map((i) => (i.id === updatedItem.id ? updatedItem : i));
         selectedItem = updatedItem;
@@ -170,75 +143,56 @@
         if (sourceId) refreshSourceStats(sourceId);
     }
 
-    function handleCardContextMenu(e, item) {
+    async function handleCardContextMenu(e, item) {
         activeContextMenuId.set(MENU_ID);
-        contextMenu = { x: e.clientX, y: e.clientY, item };
+        const schema = await getParamsSchema(item);
+        const canRefresh = 'external_ids' in schema;
+        contextMenu = { x: e.clientX, y: e.clientY, item, canRefresh };
     }
 
     async function toggleRead(item) {
-        try {
-            const updated = { ...item, is_read: !item.is_read };
-            await itemsApi.update(item.id, { is_read: updated.is_read });
+        await doToggleRead(item, items, (updated) => {
             items = items.map((i) => (i.id === item.id ? updated : i));
             refreshCollectionStats($selectedCollectionId);
             refreshFeedStats(item.feed_id);
             const sourceId = feedSourceMap[item.feed_id]?.sourceId;
             if (sourceId) refreshSourceStats(sourceId);
-        } catch (e) {
-            console.error('Failed to update item:', e.message);
-            toastError(`Failed to update item: ${e.message}`);
-        }
+        });
     }
 
     async function toggleFavorite(item) {
-        try {
-            const updated = { ...item, is_favorite: !item.is_favorite };
-            await itemsApi.update(item.id, { is_favorite: updated.is_favorite });
+        await doToggleFavorite(item, (updated) => {
             items = items.map((i) => (i.id === item.id ? updated : i));
-        } catch (e) {
-            console.error('Failed to update item:', e.message);
-            toastError(`Failed to update item: ${e.message}`);
-        }
+        });
     }
 
     async function refreshItem(item) {
         if (refreshingItemIds.has(item.id)) return;
         const schema = await getParamsSchema(item);
-        if (!schema || !('external_ids' in schema)) {
+        if (!('external_ids' in schema)) {
             toastError('This source does not support per-item refresh.');
             return;
         }
         refreshingItemIds.add(item.id);
         refreshingItemIds = refreshingItemIds;
 
-        try {
-            const job = await scrapeApi.scrape({
-                feed_id: item.feed_id,
-                mode: 'FULL',
-                external_ids: [item.external_id],
-            });
-            toastInfo(`Refreshing item "${item.title}"...`);
-            const cleanup = pollJob(job.id, {
-                onDone: async () => {
-                    refreshingItemIds.delete(item.id);
-                    refreshingItemIds = refreshingItemIds;
-                    toastSuccess(`"${item.title}" refreshed`);
-                    const updated = await itemsApi.get(item.id);
-                    items = items.map((i) => (i.id === updated.id ? updated : i));
-                },
-                onError: (msg) => {
-                    refreshingItemIds.delete(item.id);
-                    refreshingItemIds = refreshingItemIds;
-                    toastError(`Refresh error: ${msg}`);
-                },
-            });
-            cleanups.push(cleanup);
-        } catch (e) {
-            refreshingItemIds.delete(item.id);
-            refreshingItemIds = refreshingItemIds;
-            console.error('Refresh failed:', e.message);
-            toastError(`Refresh failed: ${e.message}`);
-        }
+        const cleanup = await doRefreshItem(item, {
+            onDone: (updated) => {
+                refreshingItemIds.delete(item.id);
+                refreshingItemIds = refreshingItemIds;
+                items = items.map((i) => (i.id === updated.id ? updated : i));
+            },
+            onError: () => {
+                refreshingItemIds.delete(item.id);
+                refreshingItemIds = refreshingItemIds;
+            },
+        });
+        if (cleanup) cleanups.push(cleanup);
+    }
+
+    async function openItem(item) {
+        selectedItem = item;
+        selectedItemSchema = await getParamsSchema(item);
     }
 </script>
 
@@ -249,7 +203,7 @@
         {:else if error}
             <p class="grid-status error">{error}</p>
         {:else if items.length === 0}
-            <p class="grid-status">No items in this collection.</p>
+            <p class="grid-status">No items here.</p>
         {:else}
             <div
                 class="item-grid"
@@ -288,26 +242,13 @@
     <ContextMenu
         x={contextMenu.x}
         y={contextMenu.y}
-        items={[
-            {
-                label: 'Open in new tab',
-                icon: '↗',
-                action: () => window.open(contextMenu.item.url, '_blank', 'noopener,noreferrer'),
-            },
-            { separator: true },
-            {
-                label: contextMenu.item.is_read ? 'Mark as unread' : 'Mark as read',
-                icon: contextMenu.item.is_read ? '○' : '●',
-                action: () => toggleRead(contextMenu.item),
-            },
-            {
-                label: contextMenu.item.is_favorite ? 'Remove from favorites' : 'Add to favorites',
-                icon: contextMenu.item.is_favorite ? '♥' : '♡',
-                action: () => toggleFavorite(contextMenu.item),
-            },
-            { separator: true },
-            { label: 'Refresh item', icon: '⟳', action: () => refreshItem(contextMenu.item) },
-        ]}
+        items={buildContextMenuItems({
+            item: contextMenu.item,
+            canRefresh: contextMenu.canRefresh ?? false,
+            onToggleRead: toggleRead,
+            onToggleFavorite: toggleFavorite,
+            onRefresh: refreshItem,
+        })}
         onClose={() => (contextMenu = null)}
     />
 {/if}
