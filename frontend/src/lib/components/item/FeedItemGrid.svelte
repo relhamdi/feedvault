@@ -160,6 +160,8 @@
         {:else if items.length === 0}
             <p class="grid-status">No items here.</p>
         {:else}
+            <p class="grid-status">{total} item(s)</p>
+
             <div
                 class="item-grid"
                 style="grid-template-columns: repeat(auto-fill, minmax({$gridSize}px, 1fr))"
@@ -176,8 +178,6 @@
 
         {#if loadingMore}
             <p class="grid-status">Loading more...</p>
-        {:else if items.length >= total && total > 0}
-            <p class="grid-status">{total} item(s)</p>
         {/if}
 
         {#if selectedItem}
@@ -218,7 +218,8 @@
         text-align: center;
         color: var(--text-muted);
         font-size: 0.875rem;
-        padding: 1rem 0;
+        padding: 0.5rem 0;
+        margin-bottom: 1rem;
     }
 
     .grid-status.error {
