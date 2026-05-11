@@ -1,7 +1,6 @@
 <script>
     import { createEventDispatcher, onMount } from 'svelte';
     import { refreshSourceStats, sourceStats } from '../../stores/stats.js';
-    import Badge from '../ui/Badge.svelte';
     import BadgeUnread from '../ui/BadgeUnread.svelte';
 
     export let source;
@@ -41,9 +40,6 @@
 
     <div class="source-meta">
         <BadgeUnread count={stats?.unread} />
-        {#if !source.is_active}
-            <Badge type="inactive" label="●" />
-        {/if}
     </div>
 </button>
 
