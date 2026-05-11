@@ -2,6 +2,7 @@
     import { createEventDispatcher, onMount } from 'svelte';
     import { refreshSourceStats, sourceStats } from '../../stores/stats.js';
     import Badge from '../ui/Badge.svelte';
+    import BadgeUnread from '../ui/BadgeUnread.svelte';
 
     export let source;
     export let active = false;
@@ -39,14 +40,7 @@
     </div>
 
     <div class="source-meta">
-        {#if stats !== null}
-            <span class="unread-badge" class:zero={stats.unread === 0}>
-                {stats.unread}
-            </span>
-        {:else}
-            <span class="unread-badge zero">–</span>
-        {/if}
-
+        <BadgeUnread count={stats.unread} />
         {#if !source.is_active}
             <Badge type="inactive" label="●" />
         {/if}
@@ -128,22 +122,5 @@
         align-items: center;
         gap: 0.25rem;
         flex-shrink: 0;
-    }
-
-    .unread-badge {
-        background: var(--accent);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.1rem 0.4rem;
-        border-radius: 99px;
-        min-width: 18px;
-        text-align: center;
-        transition: background var(--transition);
-    }
-
-    .unread-badge.zero {
-        background: var(--bg-tertiary);
-        color: var(--text-muted);
     }
 </style>

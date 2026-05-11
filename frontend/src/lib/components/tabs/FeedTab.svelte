@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher, onMount } from 'svelte';
     import { feedStats, refreshFeedStats } from '../../stores/stats.js';
+    import BadgeUnread from '../ui/BadgeUnread.svelte';
 
     export let feed;
     export let active = false;
@@ -34,14 +35,7 @@
         {/if}
 
         <span class="feed-name">{feed.name}</span>
-
-        {#if stats !== null}
-            <span class="unread-badge" class:zero={stats.unread === 0}>
-                {stats.unread}
-            </span>
-        {:else}
-            <span class="unread-badge zero">–</span>
-        {/if}
+        <BadgeUnread count={stats.unread} />
     </button>
 
     <button
@@ -113,23 +107,6 @@
         max-width: none;
         overflow: hidden;
         text-overflow: ellipsis;
-    }
-
-    .unread-badge {
-        background: var(--accent);
-        color: white;
-        font-size: 0.65rem;
-        font-weight: 600;
-        padding: 0.1rem 0.35rem;
-        border-radius: 99px;
-        min-width: 16px;
-        text-align: center;
-        transition: background var(--transition);
-    }
-
-    .unread-badge.zero {
-        background: var(--bg-tertiary);
-        color: var(--text-muted);
     }
 
     .scrape-btn {
