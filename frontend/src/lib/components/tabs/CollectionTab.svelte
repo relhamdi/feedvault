@@ -32,7 +32,7 @@
         {/if}
 
         <span class="collection-name">{collection.name}</span>
-        <BadgeUnread count={stats.unread} />
+        <BadgeUnread count={stats?.unread} />
     </button>
 </div>
 

@@ -40,7 +40,7 @@
     </div>
 
     <div class="source-meta">
-        <BadgeUnread count={stats.unread} />
+        <BadgeUnread count={stats?.unread} />
         {#if !source.is_active}
             <Badge type="inactive" label="●" />
         {/if}

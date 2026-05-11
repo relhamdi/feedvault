@@ -35,7 +35,7 @@
         {/if}
 
         <span class="feed-name">{feed.name}</span>
-        <BadgeUnread count={stats.unread} />
+        <BadgeUnread count={stats?.unread} />
     </button>
 
     <button
