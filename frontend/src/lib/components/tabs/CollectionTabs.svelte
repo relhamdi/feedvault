@@ -125,7 +125,7 @@
     }
 </script>
 
-<div class="collection-tabs-wrapper">
+<div class="tabs-wrapper">
     <button class="add-tab-btn" title="New collection" on:click={openCreate}>+</button>
 
     <!-- Sorting options -->
@@ -133,7 +133,7 @@
         <SortControl sort={collectionSort} options={COLLECTION_SORT_OPTIONS} />
     </div>
 
-    <div class="collection-tabs" on:wheel={handleWheel}>
+    <div class="tabs-scroll" on:wheel={handleWheel}>
         {#if loading}
             <span class="tabs-status">Loading...</span>
         {:else if error}
@@ -190,59 +190,3 @@
         }}
     />
 {/if}
-
-<style>
-    .collection-tabs-wrapper {
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg-secondary);
-        min-height: 48px;
-    }
-
-    .collection-tabs {
-        display: flex;
-        align-items: center;
-        overflow-x: auto;
-        flex: 1;
-        gap: 0.25rem;
-        padding: 0.375rem 0.5rem;
-        scrollbar-width: none;
-    }
-
-    .collection-tabs::-webkit-scrollbar {
-        display: none;
-    }
-
-    .tabs-status {
-        padding: 0 0.5rem;
-        font-size: 0.875rem;
-        color: var(--text-muted);
-    }
-
-    .tabs-status.error {
-        color: var(--danger);
-    }
-
-    .add-tab-btn {
-        flex-shrink: 0;
-        width: 48px;
-        height: 48px;
-        border-radius: 0;
-        border-right: 1px solid var(--border);
-        padding-bottom: 5px;
-        color: var(--text-muted);
-        font-size: 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition:
-            background var(--transition),
-            color var(--transition);
-    }
-
-    .add-tab-btn:hover {
-        background: var(--bg-tertiary);
-        color: var(--text-primary);
-    }
-</style>
