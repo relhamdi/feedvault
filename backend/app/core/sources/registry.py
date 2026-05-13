@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable
 
+from app.core.sources.params import ParamField
+
 if TYPE_CHECKING:
     from app.core.sources.base import BaseSource
 
@@ -14,7 +16,7 @@ class ScraperRegistration:
     # Optional metadata for POST /sources/bootstrap — unused if empty
     default_source: dict = field(default_factory=dict)
     credentials_schema: dict = field(default_factory=dict)
-    params_schema: dict = field(default_factory=dict)
+    params_schema: dict[str, ParamField] = field(default_factory=dict)
 
 
 _REGISTRY: dict[str, ScraperRegistration] = {}
@@ -38,7 +40,13 @@ def register_scraper(
         "icon_path": "https://images.gamebanana.com/static/img/banana.png",
     },
     params_schema={
-        "game_id": 11534,
+        "feed_target": ParamField(
+            description="Game ID",
+        ),
+        "external_ids": ParamField(
+            description="Optional list of mod IDs",
+            type=ParamType.TEXTAREA,
+        ),
     },
     """
 
@@ -48,7 +56,7 @@ def register_scraper(
             cls=cls,
             default_source=default_source or {},
             credentials_schema=credentials_schema or {},
-            params_schema=params_schema or {},
+            params_schema=_normalize_params_schema(params_schema or {}),
         )
         return cls
 
@@ -87,3 +95,21 @@ def registered_slugs() -> list[str]:
         list[str]: Slug list.
     """
     return list(_REGISTRY.keys())
+
+
+def _normalize_params_schema(schema: dict) -> dict[str, ParamField]:
+    return {
+        k: ParamField(description=v) if isinstance(v, str) else v
+        for k, v in schema.items()
+    }
+
+
+def apply_param_defaults(
+    params: dict,
+    params_schema: dict[str, ParamField],
+) -> dict:
+    result = dict(params)
+    for key, param_field in params_schema.items():
+        if key not in result and param_field.default is not None:
+            result[key] = param_field.default
+    return result
