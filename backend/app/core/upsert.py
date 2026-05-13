@@ -223,7 +223,6 @@ def upsert_item(
                 item.raw_extra = {**item.raw_extra, **normalized.raw_extra}
             item.source_updated_at = normalized.source_updated_at
             item.last_scraped_at = now
-            item.last_seen_at = now
         else:
             item.title = normalized.title or item.title
             item.url = normalized.url
