@@ -5,7 +5,11 @@ from sqlmodel import Session, col, select
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.sorting import FeedSortField, SortOrder
-from app.core.sources.registry import get_scraper_class
+from app.core.sources.registry import (
+    apply_param_defaults,
+    get_registration,
+    get_scraper_class,
+)
 from app.database import get_session
 from app.models.feed import Feed, FeedCreate, FeedCreateResponse, FeedRead, FeedUpdate
 from app.models.item import Item
@@ -56,14 +60,18 @@ def create_feed(feed_in: FeedCreate, session: Session = Depends(get_session)):
     feed = Feed.model_validate(feed_in)
 
     warning = None
-    if not feed.params:
-        cls = get_scraper_class(source.slug)
-        if cls:
+    cls = get_scraper_class(source.slug)
+    reg = get_registration(source.slug)
+
+    if cls and reg:
+        if not feed.params:
             extracted = cls.parse_feed_url(feed_in.url)
             if extracted:
                 feed.params = extracted
             else:
                 warning = "Params could not be extracted from URL — please fill them manually."
+        # Inject default values on the params
+        feed.params = apply_param_defaults(feed.params, reg.params_schema)
 
     session.add(feed)
     session.commit()
