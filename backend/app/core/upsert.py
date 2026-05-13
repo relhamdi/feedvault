@@ -225,7 +225,7 @@ def upsert_item(
             item.last_scraped_at = now
             item.last_seen_at = now
         else:
-            item.title = normalized.title
+            item.title = normalized.title or item.title
             item.url = normalized.url
             item.description = normalized.description
             item.summary = normalized.summary
@@ -241,6 +241,9 @@ def upsert_item(
             item.author_id = author_id
             if thumbnail_path:
                 item.thumbnail_path = thumbnail_path
+
+    if not item.title:
+        item.title = f"[unavailable] {item.external_id}"
 
     session.add(item)
     session.flush()
