@@ -87,23 +87,17 @@
     async function fetchParamsSchema(slug) {
         try {
             paramsSchema = await sourcesApi.paramsSchema(slug);
-            if (!isEdit) {
-                // Initialize empty values, external_ids as array
-                paramsValues = Object.fromEntries(
-                    Object.keys(paramsSchema).map((k) => [k, k === 'external_ids' ? '' : ''])
-                );
-            } else {
-                // Pre-fill from existing feed.params
-                paramsValues = Object.fromEntries(
-                    Object.keys(paramsSchema).map((k) => {
+            paramsValues = Object.fromEntries(
+                Object.entries(paramsSchema).map(([k, field]) => {
+                    if (isEdit) {
                         const val = feed?.params?.[k];
-                        if (k === 'external_ids' && Array.isArray(val)) {
+                        if (field.type === 'textarea' && Array.isArray(val))
                             return [k, val.join(', ')];
-                        }
-                        return [k, val ?? ''];
-                    })
-                );
-            }
+                        return [k, val ?? field.default ?? ''];
+                    }
+                    return [k, field.default ?? ''];
+                })
+            );
         } catch (e) {
             console.warn(`Failed to load paramsSchema for slug '${slug}':`, e.message);
             paramsSchema = {};
@@ -115,16 +109,17 @@
         const result = {};
         for (const [key, value] of Object.entries(paramsValues)) {
             if (!value && value !== 0) continue;
-            if (key === 'external_ids') {
-                const ids = String(value)
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter(Boolean);
+            const field = paramsSchema[key];
+            if (field?.type === 'textarea') {
+                const ids = parseTags(String(value));
                 if (ids.length > 0) result[key] = ids;
-            } else {
-                // Try to cast to number if possible
+            } else if (field?.type === 'number') {
                 const num = Number(value);
-                result[key] = isNaN(num) || value === '' ? value : num;
+                // Ignore invalid values
+                if (isNaN(num)) continue;
+                result[key] = num;
+            } else {
+                result[key] = value;
             }
         }
         return result;
@@ -176,14 +171,29 @@
     {#if Object.keys(paramsSchema).length > 0}
         <div class="global-schema-section">
             <p class="global-schema-section-title">Params</p>
-            {#each Object.entries(paramsSchema) as [key, hint]}
-                <FormField id="param-{key}" label={key} hint={String(hint)}>
-                    {#if key === 'external_ids'}
+            {#each Object.entries(paramsSchema) as [key, field]}
+                <FormField id="param-{key}" label={key} hint={field.description}>
+                    {#if field.type === 'select'}
+                        <select id="param-{key}" bind:value={paramsValues[key]}>
+                            {#each field.options as opt}
+                                <option value={opt.value}>{opt.label}</option>
+                            {/each}
+                        </select>
+                    {:else if field.type === 'number'}
+                        <input
+                            id="param-{key}"
+                            type="number"
+                            bind:value={paramsValues[key]}
+                            min={field.min ?? ''}
+                            max={field.max ?? ''}
+                            placeholder={String(field.default ?? '')}
+                        />
+                    {:else if field.type === 'textarea'}
                         <textarea
                             id="param-{key}"
                             bind:value={paramsValues[key]}
                             rows="2"
-                            placeholder="Coma separated IDs..."
+                            placeholder="Comma separated values..."
                             spellcheck="false"
                         ></textarea>
                     {:else}
@@ -191,7 +201,7 @@
                             id="param-{key}"
                             type="text"
                             bind:value={paramsValues[key]}
-                            placeholder={String(hint)}
+                            placeholder={field.description}
                         />
                     {/if}
                 </FormField>
