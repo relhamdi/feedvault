@@ -11,6 +11,7 @@ from app.core.crud import delete_obj, get_or_404, paginate
 from app.core.image import download_and_compress_batch
 from app.core.sources.base import BaseSource
 from app.core.sources.models import (
+    NormalizedItem,
     ScrapeJob,
     ScrapeJobStatus,
     ScrapeMode,
@@ -276,7 +277,7 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
 
             item_ids = []
             image_tasks: list[tuple[str, Path]] = []
-            skipped = 0
+            skipped_list: list[NormalizedItem] = []
 
             for normalized in normalized_items:
                 item, image_task = upsert_item(
@@ -286,7 +287,7 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                     source_slug=source.slug,
                 )
                 if item is None:
-                    skipped += 1
+                    skipped_list.append(normalized)
                     continue
 
                 assert item.id is not None
@@ -297,14 +298,23 @@ def _run_scrape(job_record_id: int, payload: ScrapeRequest) -> None:
                 session.add(job_record)
                 session.commit()
 
-            if skipped:
+            for skipped in skipped_list:
                 _log(
                     session,
                     job_record.id,
                     feed.id,
                     source.id,
                     LogLevel.WARNING,
-                    f"{skipped} items skipped during upsert",
+                    f"{skipped.external_id} skipped during upsert\n{skipped}",
+                )
+            else:
+                _log(
+                    session,
+                    job_record.id,
+                    feed.id,
+                    source.id,
+                    LogLevel.WARNING,
+                    f"{len(skipped_list)} items skipped during upsert",
                 )
 
             # Batch image download when upserts are done
