@@ -138,7 +138,9 @@ textarea {
     scrollbar-width: none;
 }
 
-.tabs-scroll::-webkit-scrollbar { display: none; }
+.tabs-scroll::-webkit-scrollbar {
+    display: none;
+}
 
 .tabs-status {
     padding: 0 0.5rem;
@@ -146,7 +148,9 @@ textarea {
     color: var(--text-muted);
 }
 
-.tabs-status.error { color: var(--danger); }
+.tabs-status.error {
+    color: var(--danger);
+}
 
 .add-tab-btn {
     flex-shrink: 0;
