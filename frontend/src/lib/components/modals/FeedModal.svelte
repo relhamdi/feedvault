@@ -2,7 +2,7 @@
     import { feedsApi } from '../../api/feeds.js';
     import { sourcesApi } from '../../api/sources.js';
     import { toastError, toastWarning } from '../../stores/toast.js';
-    import { parseTags } from '../../utils/format.js';
+    import { parseComaString } from '../../utils/format.js';
     import FormModal from '../modals/FormModal.svelte';
     import FormField from '../ui/FormField.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
@@ -59,7 +59,7 @@
                 url: form.url,
                 color: form.color || null,
                 icon_path: form.icon_path || null,
-                default_tags: parseTags(form.default_tags),
+                default_tags: parseComaString(form.default_tags),
                 is_active: form.is_active,
                 params:
                     Object.keys(paramsSchema).length > 0 ? buildParams() : JSON.parse(form.params),
@@ -111,7 +111,7 @@
             if (!value && value !== 0) continue;
             const field = paramsSchema[key];
             if (field?.type === 'textarea') {
-                const ids = parseTags(String(value));
+                const ids = parseComaString(String(value));
                 if (ids.length > 0) result[key] = ids;
             } else if (field?.type === 'number') {
                 const num = Number(value);

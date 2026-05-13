@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
     import { toastError } from '../../stores/toast.js';
-    import { parseTags } from '../../utils/format.js';
+    import { parseComaString } from '../../utils/format.js';
     import FormModal from '../modals/FormModal.svelte';
     import FormField from '../ui/FormField.svelte';
     import ToggleField from '../ui/ToggleField.svelte';
@@ -70,7 +70,7 @@
         try {
             const payload = {
                 ...form,
-                default_tags: parseTags(form.default_tags),
+                default_tags: parseComaString(form.default_tags),
                 icon_path: form.icon_path || null,
                 color: form.color || null,
             };

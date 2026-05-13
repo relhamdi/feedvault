@@ -3,7 +3,7 @@ import { scrapeApi } from '../api/scrape.js';
 import { DEFAULT_ITEMS_LIMIT } from '../config.js';
 import { pollJob } from '../stores/scraping.js';
 import { toastError, toastInfo, toastSuccess } from '../stores/toast.js';
-import { parseTags } from './format.js';
+import { parseComaString } from './format.js';
 
 /**
  * Build filter params from current filter/sort store values.
@@ -22,7 +22,7 @@ export function buildItemParams(filters, sort, offset) {
     if (filters.is_public !== null) params.is_public = filters.is_public;
     if (filters.search) params.search = filters.search;
     if (filters.tags) {
-        const tags = parseTags(filters.tags);
+        const tags = parseComaString(filters.tags);
         if (tags.length) params.tags = tags;
     }
     return params;
