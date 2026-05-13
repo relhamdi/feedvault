@@ -31,6 +31,7 @@ a {
 }
 
 input[type="text"],
+input[type="number"],
 input[type="url"],
 input[type="color"],
 textarea,
