@@ -192,10 +192,6 @@ def upsert_item(
     ).first()
 
     if not item:
-        # Item was trashed before we ever scraped it — skip
-        if normalized.partial:
-            return None, None
-
         item = Item(
             feed_id=feed.id,
             author_id=author_id,
@@ -225,6 +221,7 @@ def upsert_item(
                 item.is_public = normalized.is_public
             if normalized.raw_extra:
                 item.raw_extra = {**item.raw_extra, **normalized.raw_extra}
+            item.source_updated_at = normalized.source_updated_at
             item.last_scraped_at = now
             item.last_seen_at = now
         else:
