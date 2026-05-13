@@ -44,9 +44,9 @@ export function formatDate(dateStr) {
 }
 
 /**
- * Parse a comma-separated string of tags into a clean array.
+ * Parse a comma-separated string into a clean array.
  */
-export function parseTags(str) {
+export function parseComaString(str) {
     if (!str) return [];
     return str
         .split(',')

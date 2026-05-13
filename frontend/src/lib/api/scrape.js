@@ -7,5 +7,6 @@ export const scrapeApi = {
         const query = new URLSearchParams(params);
         return api.get(`/scrape/jobs?${query}`);
     },
+    deleteJob: (jobId) => api.delete(`/scrape/jobs/${jobId}`),
     getLogs: (jobId) => api.get(`/scrape/jobs/${jobId}/logs`),
 };

@@ -14,8 +14,5 @@
     "prettier-plugin-svelte": "^3.5.1",
     "svelte": "^5.55.1",
     "vite": "^8.0.4"
-  },
-  "dependencies": {
-    "svelte-spa-router": "^5.0.1"
   }
 }

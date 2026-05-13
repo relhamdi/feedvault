@@ -18,6 +18,22 @@ async function request(path, options = {}) {
     return response.status === 204 ? null : response.json();
 }
 
+/**
+ * Build search params for items routes, with filters and tag management (string list serialization)
+ */
+export function buildItemsQuery(params = {}) {
+    const { tags, ...rest } = params;
+
+    // Clean empty values
+    const clean = Object.fromEntries(
+        Object.entries(rest).filter(([, v]) => v !== null && v !== undefined && v !== '')
+    );
+
+    const query = new URLSearchParams(clean);
+    if (tags?.length) tags.forEach((t) => query.append('tags', t));
+    return query.toString();
+}
+
 export const rootApi = {
     health: () => fetch(`${API_BASE_URL}/health`).then((r) => r.json()),
     stats: () => fetch(`${API_BASE_URL}/stats`).then((r) => r.json()),

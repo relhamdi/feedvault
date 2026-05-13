@@ -1,4 +1,5 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
     import {
         formatDuration,
         jobStatusClass,
@@ -12,8 +13,8 @@
     export let open = false;
     export let logs = null; // null = not loaded, [] = loaded empty
     export let loadingLogs = false;
+    export let onDelete = null;
 
-    import { createEventDispatcher } from 'svelte';
     const dispatch = createEventDispatcher();
 
     $: sourceName = sources.find((s) => s.id === job.source_id)?.name ?? `Source #${job.source_id}`;
@@ -55,7 +56,17 @@
             {/if}
         </div>
     </div>
-    <span class="job-chevron" class:rotated={open}>▾</span>
+
+    <div class="job-actions">
+        {#if !isActive && onDelete}
+            <button
+                class="delete-btn"
+                title="Delete job"
+                on:click|stopPropagation={() => onDelete(job)}>✕</button
+            >
+        {/if}
+        <span class="job-chevron" class:rotated={open}>▾</span>
+    </div>
 </div>
 
 {#if open}
@@ -165,6 +176,34 @@
         text-overflow: ellipsis;
     }
 
+    .job-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .delete-btn {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.35rem;
+        border-radius: var(--radius);
+        color: var(--text-muted);
+        opacity: 0;
+        transition:
+            opacity var(--transition),
+            color var(--transition),
+            background var(--transition);
+    }
+
+    .job-row:hover .delete-btn {
+        opacity: 1;
+    }
+
+    .delete-btn:hover {
+        color: var(--danger);
+        background: color-mix(in srgb, var(--danger) 10%, transparent);
+    }
+
     .job-chevron {
         color: var(--text-muted);
         font-size: 0.75rem;
@@ -182,11 +221,12 @@
         border-top: none;
         border-radius: 0 0 var(--radius) var(--radius);
         padding: 0.5rem 0.75rem;
-        min-height: 85px;
-        max-height: 300px;
+        min-height: 0;
+        max-height: 200px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        flex-shrink: 0;
         gap: 0.25rem;
         margin-top: -4px;
     }
@@ -218,7 +258,7 @@
     }
 
     .log-entry.warning .log-level {
-        color: #e8b84b;
+        color: var(--warning);
     }
     .log-entry.danger .log-level {
         color: var(--danger);

@@ -1,6 +1,6 @@
 <script>
     import { dismissToast, toasts } from '../../stores/toast.js';
-    import Toast from './Toast.svelte';
+    import Toast from '../ui/Toast.svelte';
 </script>
 
 <div class="toast-container">

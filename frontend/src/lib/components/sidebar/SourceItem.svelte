@@ -1,7 +1,7 @@
 <script>
     import { createEventDispatcher, onMount } from 'svelte';
     import { refreshSourceStats, sourceStats } from '../../stores/stats.js';
-    import Badge from '../ui/Badge.svelte';
+    import BadgeUnread from '../ui/BadgeUnread.svelte';
 
     export let source;
     export let active = false;
@@ -16,6 +16,8 @@
 <button
     class="source-item"
     class:active
+    class:inactive={!source.is_active}
+    style={active ? `box-shadow: inset 3px 0 0 ${source.color ?? 'var(--accent)'}` : ''}
     on:click={() => dispatch('select')}
     on:contextmenu={(e) => {
         e.preventDefault();
@@ -37,17 +39,7 @@
     </div>
 
     <div class="source-meta">
-        {#if stats !== null}
-            <span class="unread-badge" class:zero={stats.unread === 0}>
-                {stats.unread}
-            </span>
-        {:else}
-            <span class="unread-badge zero">–</span>
-        {/if}
-
-        {#if !source.is_active}
-            <Badge type="inactive" label="●" />
-        {/if}
+        <BadgeUnread count={stats?.unread} />
     </div>
 </button>
 
@@ -69,7 +61,14 @@
 
     .source-item.active {
         background: var(--bg-tertiary);
-        box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .source-item.inactive {
+        opacity: 0.45;
+    }
+
+    .source-item.inactive:hover {
+        opacity: 0.65;
     }
 
     .source-icon {
@@ -119,22 +118,5 @@
         align-items: center;
         gap: 0.25rem;
         flex-shrink: 0;
-    }
-
-    .unread-badge {
-        background: var(--accent);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.1rem 0.4rem;
-        border-radius: 99px;
-        min-width: 18px;
-        text-align: center;
-        transition: background var(--transition);
-    }
-
-    .unread-badge.zero {
-        background: var(--bg-tertiary);
-        color: var(--text-muted);
     }
 </style>

@@ -4,6 +4,7 @@
     import { scrapeApi } from '../../api/scrape.js';
     import { sourcesApi } from '../../api/sources.js';
     import { getPollInterval } from '../../stores/scraping.js';
+    import { toastError, toastSuccess } from '../../stores/toast.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import JobRow from '../log/JobRow.svelte';
     import MultiSelect from '../ui/MultiSelect.svelte';
@@ -83,6 +84,18 @@
         }
     }
 
+    async function deleteJob(job) {
+        try {
+            await scrapeApi.deleteJob(job.id);
+            historyJobs = historyJobs.filter((j) => j.id !== job.id);
+            if (openJobId === job.id) openJobId = null;
+            toastSuccess('Job deleted.');
+        } catch (e) {
+            console.error('Failed to delete job:', e.message);
+            toastError(`Failed to delete job: ${e.message}`);
+        }
+    }
+
     // Load data
     async function loadAll() {
         historyOffset = 0;
@@ -95,8 +108,13 @@
             const jobs = jobsRes.items ?? jobsRes;
             totalJobs = jobsRes.total ?? jobs.length;
             activeJobs = jobs.filter((j) => j.status === 'running' || j.status === 'pending');
-            historyJobs = jobs.filter((j) => j.status !== 'running' && j.status !== 'pending');
-            historyOffset = historyJobs.length;
+            const newHistory = jobs.filter((j) => j.status !== 'running' && j.status !== 'pending');
+
+            // Remove possible duplicates
+            const existingIds = new Set(newHistory.map((j) => j.id));
+            historyJobs = [...newHistory, ...historyJobs.filter((j) => !existingIds.has(j.id))];
+
+            historyOffset = newHistory.length;
             sources = sourcesRes.items;
             feeds = feedsRes.items;
         } catch (e) {
@@ -115,7 +133,12 @@
             const jobs = (res.items ?? res).filter(
                 (j) => j.status !== 'running' && j.status !== 'pending'
             );
-            historyJobs = [...historyJobs, ...jobs];
+
+            // Remove possible duplicates
+            const existingIds = new Set(historyJobs.map((j) => j.id));
+            const newJobs = jobs.filter((j) => !existingIds.has(j.id));
+            historyJobs = [...historyJobs, ...newJobs];
+
             historyOffset += jobs.length;
         } catch (e) {
             console.error('Failed to load more jobs:', e.message);
@@ -234,6 +257,7 @@
                             open={openJobId === job.id}
                             logs={jobLogs[job.id] ?? null}
                             loadingLogs={loadingLogs.has(job.id)}
+                            onDelete={deleteJob}
                             on:toggle={() => toggleJob(job.id)}
                         />
                     {/each}

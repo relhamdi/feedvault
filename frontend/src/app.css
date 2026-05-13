@@ -31,6 +31,7 @@ a {
 }
 
 input[type="text"],
+input[type="number"],
 input[type="url"],
 input[type="color"],
 textarea,
@@ -71,8 +72,8 @@ textarea {
     min-height: 80px;
 }
 
-/* Shared schema section (credentials, params) */
-.schema-section {
+/* --- Shared schema section (credentials, params) --- */
+.global-schema-section {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -82,7 +83,7 @@ textarea {
     background: var(--bg-secondary);
 }
 
-.schema-section-title {
+.global-schema-section-title {
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -90,24 +91,85 @@ textarea {
     color: var(--text-muted);
 }
 
-.schema-section-hint {
+.global-schema-section-hint {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-.form-row {
+.global-form-row {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0.75rem;
     align-items: end;
 }
 
-.form-error {
+.global-form-error {
     font-size: 0.875rem;
     color: var(--danger);
     padding: 0.5rem 0.75rem;
     background: color-mix(in srgb, var(--danger) 10%, transparent);
     border-radius: var(--radius);
+}
+
+.global-list-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 1rem 0.25rem;
+}
+
+
+/* --- Shared tab styles --- */
+.tabs-wrapper {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
+    min-height: 48px;
+}
+
+.tabs-scroll {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    flex: 1;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    scrollbar-width: none;
+}
+
+.tabs-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.tabs-status {
+    padding: 0 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.tabs-status.error {
+    color: var(--danger);
+}
+
+.add-tab-btn {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 0;
+    border-right: 1px solid var(--border);
+    padding-bottom: 5px;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition), color var(--transition);
+}
+
+.add-tab-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 

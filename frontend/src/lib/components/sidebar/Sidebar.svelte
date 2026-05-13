@@ -2,18 +2,27 @@
     import { onMount } from 'svelte';
     import { sourcesApi } from '../../api/sources.js';
     import {
-        selectedFeedId,
+        collectionsMode,
         selectedSourceId,
+        selectSource,
         sourceRefreshTrigger,
+        triggerSourceRefresh,
     } from '../../stores/navigation.js';
+    import { SOURCE_SORT_OPTIONS, sourceSort } from '../../stores/sorting.js';
     import { toastError } from '../../stores/toast.js';
+    import { activeContextMenuId } from '../../stores/ui.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import LogsModal from '../modals/LogsModal.svelte';
     import SettingsModal from '../modals/SettingsModal.svelte';
     import SourceModal from '../modals/SourceModal.svelte';
+    import CollectionItem from '../sidebar/CollectionItem.svelte';
+    import SourceItem from '../sidebar/SourceItem.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
+    import SortControl from '../ui/SortControl.svelte';
     import ThemeToggle from '../ui/ThemeToggle.svelte';
-    import SourceItem from './SourceItem.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'sidebar';
 
     let sources = [];
     let loading = true;
@@ -33,7 +42,8 @@
     // Context menu
     let contextMenu = null; // { x, y, source }
 
-    $: if ($sourceRefreshTrigger) loadSources();
+    $: if ($sourceRefreshTrigger || $sourceSort) loadSources();
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onMount(async () => {
         await loadSources();
@@ -41,18 +51,19 @@
 
     async function loadSources() {
         try {
-            sources = (await sourcesApi.list()).items;
+            sources = (
+                await sourcesApi.list({
+                    sort_by: $sourceSort.sort_by,
+                    sort_order: $sourceSort.sort_order,
+                    limit: 200,
+                })
+            ).items;
         } catch (e) {
             error = e.message;
             toastError('Failed to load sources');
         } finally {
             loading = false;
         }
-    }
-
-    function selectSource(id) {
-        selectedSourceId.set(id);
-        selectedFeedId.set(null); // Reset feed selection on source change
     }
 
     function openCreate() {
@@ -79,8 +90,7 @@
             await sourcesApi.delete(toDelete.id);
             sources = sources.filter((s) => s.id !== toDelete.id);
             if ($selectedSourceId === toDelete.id) {
-                selectedSourceId.set(sources[0]?.id ?? null);
-                selectedFeedId.set(null);
+                selectSource(sources[0]?.id ?? null);
             }
         } catch (e) {
             console.error('Delete failed:', e.message);
@@ -96,11 +106,22 @@
         } else {
             sources = [...sources, saved];
         }
+        triggerSourceRefresh();
     }
 
     function handleContextMenu(e, source) {
-        e.preventDefault();
+        activeContextMenuId.set(MENU_ID);
         contextMenu = { x: e.clientX, y: e.clientY, source };
+    }
+
+    async function toggleSourceActive(source) {
+        try {
+            const updated = await sourcesApi.update(source.id, { is_active: !source.is_active });
+            handleSaved(updated);
+        } catch (e) {
+            console.error('Failed to update source:', e.message);
+            toastError(`Failed to update source: ${e.message}`);
+        }
     }
 </script>
 
@@ -111,7 +132,19 @@
         <ThemeToggle />
     </div>
 
-    <nav class="source-list">
+    <nav class="sidebar-items">
+        <!-- Collections entry -->
+        <CollectionItem />
+
+        <div class="section-divider"></div>
+
+        <!-- Sorting options -->
+        <div class="global-list-controls">
+            <span class="list-label">Sources</span>
+            <SortControl sort={sourceSort} options={SOURCE_SORT_OPTIONS} />
+        </div>
+
+        <!-- Sources entries -->
         {#if loading}
             <p class="sidebar-status">Loading...</p>
         {:else if error}
@@ -122,7 +155,7 @@
             {#each sources as source (source.id)}
                 <SourceItem
                     {source}
-                    active={$selectedSourceId === source.id}
+                    active={!$collectionsMode && $selectedSourceId === source.id}
                     on:select={() => selectSource(source.id)}
                     on:contextmenu={(e) => handleContextMenu(e.detail, source)}
                 />
@@ -153,6 +186,11 @@
         y={contextMenu.y}
         items={[
             { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.source) },
+            {
+                label: contextMenu.source.is_active ? 'Deactivate' : 'Activate',
+                icon: contextMenu.source.is_active ? '○' : '●',
+                action: () => toggleSourceActive(contextMenu.source),
+            },
             { separator: true },
             {
                 label: 'Delete',
@@ -214,7 +252,15 @@
         letter-spacing: 0.02em;
     }
 
-    .source-list {
+    .list-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+
+    .sidebar-items {
         flex: 1;
         overflow-y: auto;
         padding: 0.5rem 0;
@@ -273,5 +319,10 @@
     .icon-btn:hover {
         background: var(--bg-tertiary);
         color: var(--text-primary);
+    }
+
+    .section-divider {
+        height: 1px;
+        background: var(--border);
     }
 </style>

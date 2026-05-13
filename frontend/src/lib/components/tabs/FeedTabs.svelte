@@ -6,15 +6,22 @@
     import {
         selectedFeedId,
         selectedSourceId,
+        sourceRefreshTrigger,
         triggerFeedRefresh,
     } from '../../stores/navigation.js';
     import { getDefaultScrapeMode, pollJob } from '../../stores/scraping.js';
+    import { FEED_SORT_OPTIONS, feedSort } from '../../stores/sorting.js';
     import { refreshFeedStats, refreshSourceStats } from '../../stores/stats.js';
     import { toastError, toastSuccess } from '../../stores/toast.js';
+    import { activeContextMenuId } from '../../stores/ui.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import FeedModal from '../modals/FeedModal.svelte';
+    import FeedTab from '../tabs/FeedTab.svelte';
     import ContextMenu from '../ui/ContextMenu.svelte';
-    import FeedTab from './FeedTab.svelte';
+    import SortControl from '../ui/SortControl.svelte';
+
+    // Unique ID per component
+    const MENU_ID = 'feed-tabs';
 
     let feeds = [];
     let loading = true;
@@ -36,11 +43,12 @@
     const cleanups = [];
 
     let currentSource = null;
+
     // Reload feeds whenever selected source changes
-    $: if ($selectedSourceId) {
-        loadSource($selectedSourceId);
-        loadFeeds($selectedSourceId);
-    }
+    $: if ($selectedSourceId) loadSource($selectedSourceId);
+    $: if ($selectedSourceId && $sourceRefreshTrigger) loadSource($selectedSourceId);
+    $: if ($selectedSourceId && $feedSort) loadFeeds($selectedSourceId);
+    $: if ($activeContextMenuId !== MENU_ID) contextMenu = null;
 
     onDestroy(() => cleanups.forEach((fn) => fn()));
 
@@ -57,7 +65,13 @@
         error = null;
         feeds = [];
         try {
-            feeds = (await feedsApi.list(sourceId)).items;
+            feeds = (
+                await feedsApi.list(sourceId, {
+                    sort_by: $feedSort.sort_by,
+                    sort_order: $feedSort.sort_order,
+                    limit: 200,
+                })
+            ).items;
             // Auto-select first feed if none selected
             if (feeds.length > 0 && !$selectedFeedId) {
                 selectedFeedId.set(feeds[0].id);
@@ -113,13 +127,43 @@
             feeds = [...feeds, saved];
             selectedFeedId.set(saved.id);
         }
+        refreshFeedStats(saved.id);
     }
 
     function handleContextMenu(e, feed) {
-        contextMenu = { x: e.detail.clientX, y: e.detail.clientY, feed };
+        activeContextMenuId.set(MENU_ID);
+        contextMenu = { x: e.clientX, y: e.clientY, feed };
+    }
+
+    function handleWheel(e) {
+        if (e.deltaY === 0) return;
+        e.preventDefault();
+        e.currentTarget.scrollLeft += e.deltaY;
+    }
+
+    async function toggleFeedActive(feed) {
+        try {
+            const updated = await feedsApi.update(feed.id, { is_active: !feed.is_active });
+            handleSaved(updated);
+        } catch (e) {
+            console.error('Failed to update feed:', e.message);
+            toastError(`Failed to update feed: ${e.message}`);
+        }
     }
 
     async function startScrape(feedId) {
+        // Check if source is inactive
+        if (!currentSource?.is_active) {
+            toastError('Source is inactive.');
+            return;
+        }
+        // Check if feed is inactive
+        const feed = feeds.find((f) => f.id === feedId);
+        if (!feed?.is_active) {
+            toastError('Feed is inactive.');
+            return;
+        }
+
         if (scrapingFeedIds.has(feedId)) return;
         scrapingFeedIds.add(feedId);
         scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
@@ -134,6 +178,7 @@
                     if (feedId === $selectedFeedId) triggerFeedRefresh();
                     refreshFeedStats(feedId);
                     refreshSourceStats($selectedSourceId);
+                    loadFeeds($selectedSourceId);
                 },
                 onError: (msg) => {
                     scrapingFeedIds.delete(feedId);
@@ -152,14 +197,20 @@
 </script>
 
 {#if $selectedSourceId}
-    <div class="feed-tabs-wrapper">
+    <div class="tabs-wrapper">
         <button
             class="add-tab-btn"
             title={currentSource ? 'Add feed' : 'Loading...'}
             disabled={!currentSource}
             on:click={openCreate}>+</button
         >
-        <div class="feed-tabs">
+
+        <!-- Sorting options -->
+        <div class="global-list-controls">
+            <SortControl sort={feedSort} options={FEED_SORT_OPTIONS} />
+        </div>
+
+        <div class="tabs-scroll" on:wheel={handleWheel}>
             {#if loading}
                 <span class="tabs-status">Loading...</span>
             {:else if error}
@@ -174,7 +225,7 @@
                         scraping={scrapingFeedIds.has(feed.id)}
                         on:select={() => selectedFeedId.set(feed.id)}
                         on:scrape={() => startScrape(feed.id)}
-                        on:contextmenu={(e) => handleContextMenu(e, feed)}
+                        on:contextmenu={(e) => handleContextMenu(e.detail, feed)}
                     />
                 {/each}
             {/if}
@@ -188,8 +239,24 @@
         x={contextMenu.x}
         y={contextMenu.y}
         items={[
+            {
+                label: 'Open in new tab',
+                icon: '↗',
+                action: () => window.open(contextMenu.feed.url, '_blank', 'noopener,noreferrer'),
+            },
+            { separator: true },
             { label: 'Edit', icon: '✎', action: () => openEdit(contextMenu.feed) },
-            { label: 'Scrape', icon: '⟳', action: () => startScrape(contextMenu.feed.id) },
+            {
+                label: contextMenu.feed.is_active ? 'Deactivate' : 'Activate',
+                icon: contextMenu.feed.is_active ? '○' : '●',
+                action: () => toggleFeedActive(contextMenu.feed),
+            },
+            {
+                label: 'Scrape',
+                icon: '⟳',
+                disabled: !contextMenu.feed.is_active || !currentSource?.is_active,
+                action: () => startScrape(contextMenu.feed.id),
+            },
             { separator: true },
             {
                 label: 'Delete',
@@ -224,59 +291,3 @@
         }}
     />
 {/if}
-
-<style>
-    .feed-tabs-wrapper {
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg-secondary);
-        min-height: 48px;
-    }
-
-    .feed-tabs {
-        display: flex;
-        align-items: center;
-        overflow-x: auto;
-        flex: 1;
-        gap: 0.25rem;
-        padding: 0.375rem 0.5rem;
-        scrollbar-width: none; /* Firefox */
-    }
-
-    .feed-tabs::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
-    }
-
-    .tabs-status {
-        padding: 0 0.5rem;
-        font-size: 0.875rem;
-        color: var(--text-muted);
-    }
-
-    .tabs-status.error {
-        color: var(--danger);
-    }
-
-    .add-tab-btn {
-        flex-shrink: 0;
-        width: 48px;
-        height: 48px;
-        border-radius: 0;
-        border-right: 1px solid var(--border);
-        padding-bottom: 5px;
-        color: var(--text-muted);
-        font-size: 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition:
-            background var(--transition),
-            color var(--transition);
-    }
-
-    .add-tab-btn:hover {
-        background: var(--bg-tertiary);
-        color: var(--text-primary);
-    }
-</style>
