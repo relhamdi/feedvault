@@ -7,6 +7,7 @@ from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.crypto import encrypt_credentials
 from app.core.sorting import SortOrder, SourceSortField
+from app.core.sources.params import ParamField
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
 from app.database import get_session
 from app.models.feed import Feed
@@ -199,8 +200,8 @@ def bootstrap_all_sources(session: Session = Depends(get_session)):
     return BootstrapAllResult(created=created, existing=existing)
 
 
-@router.get("/bootstrap/{slug}/params-schema")
-def get_params_schema_route(slug: str) -> dict:
+@router.get("/bootstrap/{slug}/params-schema", response_model=dict[str, ParamField])
+def get_params_schema(slug: str):
     """Return the expected params keys for a registered scraper."""
     reg = get_registration(slug)
     if reg is None:
