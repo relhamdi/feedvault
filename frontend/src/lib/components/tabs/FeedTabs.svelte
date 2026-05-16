@@ -255,7 +255,18 @@
                 label: 'Scrape',
                 icon: '⟳',
                 disabled: !contextMenu.feed.is_active || !currentSource?.is_active,
-                action: () => startScrape(contextMenu.feed.id),
+                children: [
+                    {
+                        label: 'Incremental',
+                        icon: '↑',
+                        action: () => startScrape(contextMenu.feed.id, 'INCREMENTAL'),
+                    },
+                    {
+                        label: 'Full',
+                        icon: '↻',
+                        action: () => startScrape(contextMenu.feed.id, 'FULL'),
+                    },
+                ],
             },
             { separator: true },
             {
