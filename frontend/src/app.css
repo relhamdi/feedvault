@@ -30,10 +30,11 @@ a {
     text-decoration: none;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="url"],
-input[type="color"],
+input:is([type="text"],
+    [type="number"],
+    [type="url"],
+    [type="color"],
+    [type="password"]),
 textarea,
 select {
     width: 100%;
