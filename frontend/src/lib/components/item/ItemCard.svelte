@@ -10,7 +10,7 @@
     const dispatch = createEventDispatcher();
 
     $: thumbnailSrc = item.thumbnail_path
-        ? `${MEDIA_URL}/${item.thumbnail_path}`
+        ? `${MEDIA_URL}/${item.thumbnail_path}?t=${new Date(item.source_updated_at).getTime()}`
         : (item.thumbnail_url ?? null);
 </script>
 
