@@ -151,7 +151,7 @@
         }
     }
 
-    async function startScrape(feedId) {
+    async function startScrape(feedId, mode = getDefaultScrapeMode()) {
         // Check if source is inactive
         if (!currentSource?.is_active) {
             toastError('Source is inactive.');
@@ -169,7 +169,7 @@
         scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
 
         try {
-            const job = await scrapeApi.scrape({ feed_id: feedId, mode: getDefaultScrapeMode() });
+            const job = await scrapeApi.scrape({ feed_id: feedId, mode: mode });
             const cleanup = pollJob(job.id, {
                 onDone: (job) => {
                     scrapingFeedIds.delete(feedId);
