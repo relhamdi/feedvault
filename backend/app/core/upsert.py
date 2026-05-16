@@ -243,6 +243,7 @@ def upsert_item(
 
     if not item.title:
         item.title = f"[unavailable] {item.external_id}"
+    item.is_read = False
 
     session.add(item)
     session.flush()
