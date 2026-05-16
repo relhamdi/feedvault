@@ -22,7 +22,9 @@
     $: supportsScrapeById = 'external_ids' in paramsSchema;
 
     $: remoteSrc = item.thumbnail_url ?? null;
-    $: localSrc = item.thumbnail_path ? `${MEDIA_URL}/${item.thumbnail_path}` : null;
+    $: localSrc = item.thumbnail_path
+        ? `${MEDIA_URL}/${item.thumbnail_path}?t=${new Date(item.source_updated_at).getTime()}`
+        : null;
     $: thumbnailSrc = remoteSrc || localSrc;
 
     $: mediaByType =
