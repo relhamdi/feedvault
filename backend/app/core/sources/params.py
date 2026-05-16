@@ -9,6 +9,7 @@ class ParamType(str, Enum):
     NUMBER = "number"
     SELECT = "select"
     TEXTAREA = "textarea"
+    BOOL = "bool"
 
 
 class SelectOption(BaseModel):
