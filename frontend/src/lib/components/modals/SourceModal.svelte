@@ -173,7 +173,7 @@
                         id="cred-{key}"
                         type="password"
                         bind:value={credentialsValues[key]}
-                        placeholder={String(hint)}
+                        placeholder="Credentials here"
                     />
                 </FormField>
             {/each}
@@ -189,7 +189,12 @@
             </p>
             {#each Object.entries(credentialsValues) as [key, _]}
                 <FormField id="cred-{key}" label={key}>
-                    <input id="cred-{key}" type="password" bind:value={credentialsValues[key]} />
+                    <input
+                        id="cred-{key}"
+                        type="password"
+                        bind:value={credentialsValues[key]}
+                        placeholder="Credentials here"
+                    />
                 </FormField>
             {/each}
             {#if Object.keys(credentialsValues).length === 0}
