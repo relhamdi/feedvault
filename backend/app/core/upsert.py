@@ -228,6 +228,7 @@ def upsert_item(
             item.url = normalized.url
             item.description = normalized.description
             item.summary = normalized.summary
+            item.thumbnail_url = normalized.thumbnail_url
             item.tags = tags
             item.stats = normalized.stats
             item.raw_extra = normalized.raw_extra
