@@ -73,6 +73,18 @@ textarea {
     min-height: 80px;
 }
 
+/* --- Shared form fields/toggles --- */
+.form-field-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-field-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
 /* --- Shared schema section (credentials, params) --- */
 .global-schema-section {
     display: flex;

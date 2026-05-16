@@ -7,14 +7,14 @@
 
 <div class="toggle-wrapper">
     <div class="toggle-row">
-        <label for={id} class="toggle-label">{label}</label>
+        <label for={id} class="form-field-label">{label}</label>
         <label class="switch">
             <input {id} type="checkbox" bind:checked />
             <span class="slider"></span>
         </label>
     </div>
     {#if hint}
-        <span class="toggle-hint">{hint}</span>
+        <span class="form-field-hint">{hint}</span>
     {/if}
 </div>
 
@@ -29,12 +29,6 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-    }
-
-    .toggle-label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text-secondary);
     }
 
     .switch {
@@ -87,10 +81,5 @@
     .switch input:checked + .slider::before {
         transform: translate(14px, -50%);
         background: white;
-    }
-
-    .toggle-hint {
-        font-size: 0.75rem;
-        color: var(--text-muted);
     }
 </style>
