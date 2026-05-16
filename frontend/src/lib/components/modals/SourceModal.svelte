@@ -188,7 +188,7 @@
                 To update credentials, enter new values below. Leave empty to keep existing.
             </p>
             {#each Object.entries(credentialsValues) as [key, _]}
-                <FormField id="cred-{key}" label={key}>
+                <FormField id="cred-{key}" label={key} hint={String(credentialsSchema[key] ?? '')}>
                     <input
                         id="cred-{key}"
                         type="password"
