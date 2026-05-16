@@ -164,6 +164,19 @@ def upsert_item(
         author = _upsert_author(session, normalized.author, feed.source_id)
         author_id = author.id
 
+    # --- Tags: custom + inherited from feed and source ---
+    source = session.get(Source, feed.source_id)
+    source_tags = list(source.default_tags or []) if source else []
+    tags = normalize_tags(normalized.tags + list(feed.default_tags or []) + source_tags)
+
+    # --- Item fetch ---
+    item = session.exec(
+        select(Item).where(
+            Item.external_id == normalized.external_id,
+            Item.feed_id == feed.id,
+        )
+    ).first()
+
     # --- Thumbnail ---
     thumbnail_path = None
     image_task: tuple[str, Path] | None = None
@@ -175,22 +188,18 @@ def upsert_item(
             normalized.thumbnail_sub_path,
         )
         thumbnail_path = str(Path(*dest.parts[1:]))
-        if not dest.exists():
+        url_changed = (
+            item is not None and item.thumbnail_url != normalized.thumbnail_url
+        )
+
+        if not dest.exists() or url_changed:
             image_task = (normalized.thumbnail_url, dest)
 
-    # --- Tags: custom + inherited from feed and source ---
-    source = session.get(Source, feed.source_id)
-    source_tags = list(source.default_tags or []) if source else []
-    tags = normalize_tags(normalized.tags + list(feed.default_tags or []) + source_tags)
+            # Delete old thumbnail if new one is different
+            if url_changed:
+                dest.unlink(missing_ok=True)
 
     # --- Item upsert ---
-    item = session.exec(
-        select(Item).where(
-            Item.external_id == normalized.external_id,
-            Item.feed_id == feed.id,
-        )
-    ).first()
-
     if not item:
         item = Item(
             feed_id=feed.id,
