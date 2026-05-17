@@ -35,6 +35,9 @@
     let showConfirm = false;
     let deletingFeed = null;
 
+    let clearTarget = null;
+    let showClearConfirm = false;
+
     // Context menu
     let contextMenu = null;
 
@@ -149,6 +152,31 @@
             console.error('Failed to update feed:', e.message);
             toastError(`Failed to update feed: ${e.message}`);
         }
+    }
+
+    function openClearConfirm(item) {
+        clearTarget = item;
+        showClearConfirm = true;
+        contextMenu = null;
+    }
+
+    async function clearFeedItems(feed) {
+        try {
+            await feedsApi.clearItems(feed.id);
+            toastSuccess(`All items cleared from '${feed.name}'.`);
+            triggerFeedRefresh();
+            refreshFeedStats(feed.id);
+            refreshSourceStats($selectedSourceId);
+        } catch (e) {
+            console.error('Failed to clear items:', e.message);
+            toastError(`Failed to clear items: ${e.message}`);
+        }
+    }
+
+    async function handleClearConfirm() {
+        if (!clearTarget) return;
+        await clearFeedItems(clearTarget);
+        clearTarget = null;
     }
 
     async function startScrape(feedId, mode = getDefaultScrapeMode()) {
@@ -270,6 +298,12 @@
             },
             { separator: true },
             {
+                label: 'Clear items',
+                icon: '⌫',
+                danger: true,
+                action: () => openClearConfirm(contextMenu.feed),
+            },
+            {
                 label: 'Delete',
                 icon: '✕',
                 danger: true,
@@ -299,6 +333,18 @@
         onClose={() => {
             showConfirm = false;
             deletingFeed = null;
+        }}
+    />
+{/if}
+
+{#if showClearConfirm && clearTarget}
+    <ConfirmModal
+        title="Clear items"
+        message="Delete all items from «{clearTarget.name}»? This cannot be undone."
+        onConfirm={handleClearConfirm}
+        onClose={() => {
+            showClearConfirm = false;
+            clearTarget = null;
         }}
     />
 {/if}
