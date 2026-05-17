@@ -7,6 +7,7 @@
     import { formatDate, parseBBCode } from '../../utils/format.js';
     import { createBackdropHandlers } from '../../utils/modal.js';
     import Badge from '../ui/Badge.svelte';
+    import PollDisplay from '../ui/PollDisplay.svelte';
 
     export let item;
     export let feedId;
@@ -175,6 +176,10 @@
                         <h4 class="global-schema-section-title">Description</h4>
                         <div class="modal-text">{@html parseBBCode(item.description)}</div>
                     </div>
+                {/if}
+
+                {#if item.raw_extra?.poll}
+                    <PollDisplay poll={item.raw_extra.poll} />
                 {/if}
             </div>
 
