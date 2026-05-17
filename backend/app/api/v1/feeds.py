@@ -91,7 +91,10 @@ def update_feed(
 
 @router.delete("/{feed_id}", status_code=204)
 def delete_feed(feed_id: int, session: Session = Depends(get_session)):
+    paths = get_thumbnail_paths_for_feed(session, feed_id)
+
     delete_obj(session, get_or_404(session, Feed, feed_id))
+    delete_thumbnail_files(paths)
 
 
 @router.delete("/{feed_id}/items", status_code=204)

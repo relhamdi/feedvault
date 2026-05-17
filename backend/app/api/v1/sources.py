@@ -88,7 +88,10 @@ def update_source(
 
 @router.delete("/{source_id}", status_code=204)
 def delete_source(source_id: int, session: Session = Depends(get_session)):
+    paths = get_thumbnail_paths_for_source(session, source_id)
+
     delete_obj(session, get_or_404(session, Source, source_id))
+    delete_thumbnail_files(paths)
 
 
 @router.delete("/{source_id}/feeds", status_code=204)
