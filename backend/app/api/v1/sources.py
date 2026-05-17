@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlalchemy import case, func
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, delete, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
 from app.core.crypto import encrypt_credentials
+from app.core.image import delete_thumbnail_files, get_thumbnail_paths_for_source
 from app.core.sorting import SortOrder, SourceSortField
 from app.core.sources.params import ParamField
 from app.core.sources.registry import _REGISTRY, get_registration, registered_slugs
@@ -88,6 +89,27 @@ def update_source(
 @router.delete("/{source_id}", status_code=204)
 def delete_source(source_id: int, session: Session = Depends(get_session)):
     delete_obj(session, get_or_404(session, Source, source_id))
+
+
+@router.delete("/{source_id}/feeds", status_code=204)
+def clear_source_feeds(source_id: int, session: Session = Depends(get_session)):
+    _ = get_or_404(session, Source, source_id)
+    paths = get_thumbnail_paths_for_source(session, source_id)
+
+    session.exec(delete(Feed).where(col(Feed.source_id) == source_id))
+    session.commit()
+    delete_thumbnail_files(paths)
+
+
+@router.delete("/{source_id}/items", status_code=204)
+def clear_source_items(source_id: int, session: Session = Depends(get_session)):
+    _ = get_or_404(session, Source, source_id)
+    feed_ids = session.exec(select(Feed.id).where(Feed.source_id == source_id)).all()
+    paths = get_thumbnail_paths_for_source(session, source_id)
+
+    session.exec(delete(Item).where(col(Item.feed_id).in_(feed_ids)))
+    session.commit()
+    delete_thumbnail_files(paths)
 
 
 @router.get("/{source_id}/stats", response_model=SourceStats)
