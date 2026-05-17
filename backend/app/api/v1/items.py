@@ -12,6 +12,7 @@ from app.core.crud import (
     get_or_404_with_options,
     paginate,
 )
+from app.core.image import delete_thumbnail
 from app.core.sorting import ITEM_SORT_COLUMNS, ItemSortField, SortOrder
 from app.database import get_session
 from app.models.category import Category, CategoryCreate
@@ -127,7 +128,10 @@ def update_item(
 
 @router.delete("/{item_id}", status_code=204)
 def delete_item(item_id: int, session: Session = Depends(get_session)):
-    delete_obj(session, get_or_404(session, Item, item_id))
+    item = get_or_404(session, Item, item_id)
+    path = item.thumbnail_path  # Store before delete
+    delete_obj(session, item)
+    delete_thumbnail(path)  # Delete after commit
 
 
 # --- ItemMedia routes ---
