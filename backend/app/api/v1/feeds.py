@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import case, func
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, delete, select
 
 from app.core.constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT
 from app.core.crud import apply_patch, delete_obj, get_or_404, paginate
+from app.core.image import delete_thumbnail_files, get_thumbnail_paths_for_feed
 from app.core.sorting import FeedSortField, SortOrder
 from app.core.sources.registry import (
     apply_param_defaults,
@@ -90,7 +91,20 @@ def update_feed(
 
 @router.delete("/{feed_id}", status_code=204)
 def delete_feed(feed_id: int, session: Session = Depends(get_session)):
+    paths = get_thumbnail_paths_for_feed(session, feed_id)
+
     delete_obj(session, get_or_404(session, Feed, feed_id))
+    delete_thumbnail_files(paths)
+
+
+@router.delete("/{feed_id}/items", status_code=204)
+def clear_feed_items(feed_id: int, session: Session = Depends(get_session)):
+    _ = get_or_404(session, Feed, feed_id)
+    paths = get_thumbnail_paths_for_feed(session, feed_id)
+
+    session.exec(delete(Item).where(col(Item.feed_id) == feed_id))
+    session.commit()
+    delete_thumbnail_files(paths)
 
 
 @router.get("/{feed_id}/stats", response_model=FeedStats)

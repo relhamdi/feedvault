@@ -4,9 +4,12 @@ from pathlib import Path
 
 import httpx
 from PIL import Image
+from sqlmodel import Session, col, select
 
 from app.config import settings
 from app.core.constants import THUMBNAIL_MAX_SIZE, THUMBNAIL_QUALITY
+from app.models.feed import Feed
+from app.models.item import Item
 
 
 def download_and_compress(url: str, dest: Path) -> bool:
@@ -89,3 +92,42 @@ def get_thumbnail_path(
     if sub_path:
         return media_dir / source_slug / sub_path / f"{external_id}.webp"
     return media_dir / source_slug / f"{external_id}.webp"
+
+
+def delete_thumbnail(thumbnail_path: str | None) -> None:
+    """Delete a local thumbnail file if it exists."""
+    if not thumbnail_path:
+        return
+
+    try:
+        dest = Path(settings.media_dir) / thumbnail_path
+        dest.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def delete_thumbnail_files(paths: list[str]) -> None:
+    for path in paths:
+        delete_thumbnail(path)
+
+
+def get_thumbnail_paths_for_feed(session: Session, feed_id: int) -> list[str]:
+    paths = session.exec(
+        select(Item.thumbnail_path).where(
+            Item.feed_id == feed_id, col(Item.thumbnail_path).is_not(None)
+        )
+    ).all()
+    return [p for p in paths if p is not None]
+
+
+def get_thumbnail_paths_for_source(session: Session, source_id: int) -> list[str]:
+    feed_ids = session.exec(select(Feed.id).where(Feed.source_id == source_id)).all()
+    if not feed_ids:
+        return []
+
+    paths = session.exec(
+        select(Item.thumbnail_path).where(
+            col(Item.feed_id).in_(feed_ids), col(Item.thumbnail_path).is_not(None)
+        )
+    ).all()
+    return [p for p in paths if p is not None]
