@@ -35,6 +35,9 @@
     let showConfirm = false;
     let deletingFeed = null;
 
+    let clearTarget = null;
+    let showClearConfirm = false;
+
     // Context menu
     let contextMenu = null;
 
@@ -151,7 +154,32 @@
         }
     }
 
-    async function startScrape(feedId) {
+    function openClearConfirm(item) {
+        clearTarget = item;
+        showClearConfirm = true;
+        contextMenu = null;
+    }
+
+    async function clearFeedItems(feed) {
+        try {
+            await feedsApi.clearItems(feed.id);
+            toastSuccess(`All items cleared from '${feed.name}'.`);
+            triggerFeedRefresh();
+            refreshFeedStats(feed.id);
+            refreshSourceStats($selectedSourceId);
+        } catch (e) {
+            console.error('Failed to clear items:', e.message);
+            toastError(`Failed to clear items: ${e.message}`);
+        }
+    }
+
+    async function handleClearConfirm() {
+        if (!clearTarget) return;
+        await clearFeedItems(clearTarget);
+        clearTarget = null;
+    }
+
+    async function startScrape(feedId, mode = getDefaultScrapeMode()) {
         // Check if source is inactive
         if (!currentSource?.is_active) {
             toastError('Source is inactive.');
@@ -169,7 +197,7 @@
         scrapingFeedIds = scrapingFeedIds; // trigger Svelte reactivity
 
         try {
-            const job = await scrapeApi.scrape({ feed_id: feedId, mode: getDefaultScrapeMode() });
+            const job = await scrapeApi.scrape({ feed_id: feedId, mode: mode });
             const cleanup = pollJob(job.id, {
                 onDone: (job) => {
                     scrapingFeedIds.delete(feedId);
@@ -255,9 +283,26 @@
                 label: 'Scrape',
                 icon: '⟳',
                 disabled: !contextMenu.feed.is_active || !currentSource?.is_active,
-                action: () => startScrape(contextMenu.feed.id),
+                children: [
+                    {
+                        label: 'Incremental',
+                        icon: '↑',
+                        action: () => startScrape(contextMenu.feed.id, 'INCREMENTAL'),
+                    },
+                    {
+                        label: 'Full',
+                        icon: '↻',
+                        action: () => startScrape(contextMenu.feed.id, 'FULL'),
+                    },
+                ],
             },
             { separator: true },
+            {
+                label: 'Clear items',
+                icon: '⌫',
+                danger: true,
+                action: () => openClearConfirm(contextMenu.feed),
+            },
             {
                 label: 'Delete',
                 icon: '✕',
@@ -288,6 +333,18 @@
         onClose={() => {
             showConfirm = false;
             deletingFeed = null;
+        }}
+    />
+{/if}
+
+{#if showClearConfirm && clearTarget}
+    <ConfirmModal
+        title="Clear items"
+        message="Delete all items from «{clearTarget.name}»? This cannot be undone."
+        onConfirm={handleClearConfirm}
+        onClose={() => {
+            showClearConfirm = false;
+            clearTarget = null;
         }}
     />
 {/if}

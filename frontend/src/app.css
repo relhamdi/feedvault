@@ -30,10 +30,11 @@ a {
     text-decoration: none;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="url"],
-input[type="color"],
+input:is([type="text"],
+    [type="number"],
+    [type="url"],
+    [type="color"],
+    [type="password"]),
 textarea,
 select {
     width: 100%;
@@ -70,6 +71,18 @@ select:disabled {
 textarea {
     resize: vertical;
     min-height: 80px;
+}
+
+/* --- Shared form fields/toggles --- */
+.form-field-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-field-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 /* --- Shared schema section (credentials, params) --- */

@@ -6,10 +6,12 @@
         selectedSourceId,
         selectSource,
         sourceRefreshTrigger,
+        triggerFeedRefresh,
         triggerSourceRefresh,
     } from '../../stores/navigation.js';
     import { SOURCE_SORT_OPTIONS, sourceSort } from '../../stores/sorting.js';
-    import { toastError } from '../../stores/toast.js';
+    import { refreshSourceStats } from '../../stores/stats.js';
+    import { toastError, toastSuccess } from '../../stores/toast.js';
     import { activeContextMenuId } from '../../stores/ui.js';
     import ConfirmModal from '../modals/ConfirmModal.svelte';
     import LogsModal from '../modals/LogsModal.svelte';
@@ -38,6 +40,9 @@
     // Confirm delete
     let showConfirm = false;
     let deletingSource = null;
+
+    let clearTarget = null;
+    let showClearConfirm = false;
 
     // Context menu
     let contextMenu = null; // { x, y, source }
@@ -123,6 +128,47 @@
             toastError(`Failed to update source: ${e.message}`);
         }
     }
+
+    function openClearConfirm(type, item) {
+        clearTarget = { type, item };
+        showClearConfirm = true;
+        contextMenu = null;
+    }
+
+    async function clearSourceFeeds(source) {
+        try {
+            await sourcesApi.clearFeeds(source.id);
+            toastSuccess(`All feeds cleared from '${source.name}'.`);
+            triggerSourceRefresh();
+            selectSource(null);
+            selectSource(source.id);
+            refreshSourceStats(source.id);
+        } catch (e) {
+            console.error('Failed to clear feeds:', e.message);
+            toastError(`Failed to clear feeds: ${e.message}`);
+        }
+    }
+
+    async function clearSourceItems(source) {
+        try {
+            await sourcesApi.clearItems(source.id);
+            toastSuccess(`All items cleared from '${source.name}'.`);
+            selectSource(null);
+            selectSource(source.id);
+            triggerFeedRefresh();
+            refreshSourceStats(source.id);
+        } catch (e) {
+            console.error('Failed to clear items:', e.message);
+            toastError(`Failed to clear items: ${e.message}`);
+        }
+    }
+
+    async function handleClearConfirm() {
+        if (!clearTarget) return;
+        if (clearTarget.type === 'items') await clearSourceItems(clearTarget.item);
+        else if (clearTarget.type === 'feeds') await clearSourceFeeds(clearTarget.item);
+        clearTarget = null;
+    }
 </script>
 
 <div class="sidebar">
@@ -193,6 +239,18 @@
             },
             { separator: true },
             {
+                label: 'Clear feeds',
+                icon: '⌫',
+                danger: true,
+                action: () => openClearConfirm('feeds', contextMenu.source),
+            },
+            {
+                label: 'Clear items',
+                icon: '⌫',
+                danger: true,
+                action: () => openClearConfirm('items', contextMenu.source),
+            },
+            {
                 label: 'Delete',
                 icon: '✕',
                 danger: true,
@@ -225,6 +283,18 @@
         onClose={() => {
             showConfirm = false;
             deletingSource = null;
+        }}
+    />
+{/if}
+
+{#if showClearConfirm && clearTarget}
+    <ConfirmModal
+        title="Clear {clearTarget.type}"
+        message="Delete all items from «{clearTarget.item.name}»? This cannot be undone."
+        onConfirm={handleClearConfirm}
+        onClose={() => {
+            showClearConfirm = false;
+            clearTarget = null;
         }}
     />
 {/if}

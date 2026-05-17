@@ -108,9 +108,12 @@
     function buildParams() {
         const result = {};
         for (const [key, value] of Object.entries(paramsValues)) {
-            if (!value && value !== 0) continue;
+            // Skip only null/undefined/empty string, not false or 0
+            if (value === null || value === undefined || value === '') continue;
             const field = paramsSchema[key];
-            if (field?.type === 'textarea') {
+            if (field?.type === 'bool') {
+                result[key] = Boolean(value);
+            } else if (field?.type === 'textarea') {
                 const ids = parseComaString(String(value));
                 if (ids.length > 0) result[key] = ids;
             } else if (field?.type === 'number') {
@@ -172,39 +175,54 @@
         <div class="global-schema-section">
             <p class="global-schema-section-title">Params</p>
             {#each Object.entries(paramsSchema) as [key, field]}
-                <FormField id="param-{key}" label={key} hint={field.description}>
-                    {#if field.type === 'select'}
-                        <select id="param-{key}" bind:value={paramsValues[key]}>
-                            {#each field.options as opt}
-                                <option value={opt.value}>{opt.label}</option>
-                            {/each}
-                        </select>
-                    {:else if field.type === 'number'}
-                        <input
-                            id="param-{key}"
-                            type="number"
-                            bind:value={paramsValues[key]}
-                            min={field.min ?? ''}
-                            max={field.max ?? ''}
-                            placeholder={String(field.default ?? '')}
-                        />
-                    {:else if field.type === 'textarea'}
-                        <textarea
-                            id="param-{key}"
-                            bind:value={paramsValues[key]}
-                            rows="2"
-                            placeholder="Comma separated values..."
-                            spellcheck="false"
-                        ></textarea>
-                    {:else}
-                        <input
-                            id="param-{key}"
-                            type="text"
-                            bind:value={paramsValues[key]}
-                            placeholder={field.description}
-                        />
-                    {/if}
-                </FormField>
+                {#if field.type === 'bool'}
+                    <ToggleField
+                        id="param-{key}"
+                        label={key}
+                        bind:checked={paramsValues[key]}
+                        hint={field.description}
+                    />
+                {:else}
+                    <FormField id="param-{key}" label={key} hint={field.description}>
+                        {#if field.type === 'select'}
+                            <select id="param-{key}" bind:value={paramsValues[key]}>
+                                {#each field.options as opt}
+                                    <option value={opt.value}>{opt.label}</option>
+                                {/each}
+                            </select>
+                        {:else if field.type === 'number'}
+                            <input
+                                id="param-{key}"
+                                type="number"
+                                bind:value={paramsValues[key]}
+                                min={field.min ?? ''}
+                                max={field.max ?? ''}
+                                placeholder={String(field.default ?? '')}
+                            />
+                        {:else if field.type === 'textarea'}
+                            <textarea
+                                id="param-{key}"
+                                bind:value={paramsValues[key]}
+                                rows="2"
+                                placeholder="Comma separated values..."
+                                spellcheck="false"
+                            ></textarea>
+                        {:else if field.type === 'bool'}
+                            <ToggleField
+                                id="param-{key}"
+                                label=""
+                                bind:checked={paramsValues[key]}
+                            />
+                        {:else}
+                            <input
+                                id="param-{key}"
+                                type="text"
+                                bind:value={paramsValues[key]}
+                                placeholder={field.description}
+                            />
+                        {/if}
+                    </FormField>
+                {/if}
             {/each}
         </div>
     {:else}

@@ -9,9 +9,24 @@
 
     const dispatch = createEventDispatcher();
 
+    let imgError = false;
+
     $: thumbnailSrc = item.thumbnail_path
-        ? `${MEDIA_URL}/${item.thumbnail_path}`
+        ? `${MEDIA_URL}/${item.thumbnail_path}?t=${new Date(item.source_updated_at).getTime()}`
         : (item.thumbnail_url ?? null);
+
+    // Reset imgError on item change
+    $: (item, (imgError = false));
+
+    function handleImgError(e) {
+        // If local failed, fall back to remote
+        if (item.thumbnail_url && thumbnailSrc !== item.thumbnail_url) {
+            thumbnailSrc = item.thumbnail_url;
+        } else {
+            // Fallback to placeholder
+            imgError = true;
+        }
+    }
 </script>
 
 <article
@@ -26,8 +41,8 @@
     <button class="card-btn" on:click>
         <!-- Thumbnail -->
         <div class="card-thumbnail">
-            {#if thumbnailSrc}
-                <img src={thumbnailSrc} alt={item.title} />
+            {#if thumbnailSrc && !imgError}
+                <img src={thumbnailSrc} alt={item.title} on:error={handleImgError} />
             {:else}
                 <div class="thumbnail-placeholder">
                     <span>{item.title.charAt(0).toUpperCase()}</span>

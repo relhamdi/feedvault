@@ -6,6 +6,9 @@
     export let items = []; // { label, action, danger? }
     export let onClose;
 
+    let openSubmenuIndex = null;
+    let submenuPos = { x: 0, y: 0 };
+
     function handleClick(action) {
         action();
         onClose();
@@ -19,6 +22,22 @@
         activeContextMenuId.set(null);
         onClose();
     }
+
+    function handleItemEnter(e, index, item) {
+        if (!item.children) {
+            openSubmenuIndex = null;
+            return;
+        }
+
+        openSubmenuIndex = index;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const submenuWidth = 160;
+        const wouldOverflow = rect.right + submenuWidth > window.innerWidth;
+        submenuPos = {
+            x: wouldOverflow ? rect.left - submenuWidth : rect.right,
+            y: rect.top,
+        };
+    }
 </script>
 
 <svelte:window on:keydown={handleKeydown} on:click={handleOutsideClick} />
@@ -30,29 +49,59 @@
     on:keydown|stopPropagation
     role="menu"
 >
-    {#each items as item}
+    {#each items as item, i}
         {#if item.separator}
             <li class="separator" role="separator"></li>
         {:else}
-            <li>
+            <li class="item-wrapper">
                 <button
                     class="context-item"
                     class:danger={item.danger}
                     class:disabled={item.disabled}
+                    class:has-children={item.children}
                     disabled={item.disabled}
+                    on:mouseenter={(e) => handleItemEnter(e, i, item)}
                     on:click={() => !item.disabled && handleClick(item.action)}
                 >
                     {#if item.icon}
                         <span class="context-icon">{item.icon}</span>
                     {/if}
                     {item.label}
+                    {#if item.children}<span class="submenu-arrow">›</span>{/if}
                 </button>
+
+                {#if item.children && openSubmenuIndex === i}
+                    <menu
+                        class="context-menu submenu"
+                        style="left: {submenuPos.x}px; top: {submenuPos.y}px"
+                        on:click|stopPropagation
+                        on:keydown|stopPropagation
+                        role="menu"
+                    >
+                        {#each item.children as child}
+                            <li>
+                                <button
+                                    class="context-item"
+                                    on:click={() => handleClick(child.action)}
+                                >
+                                    {#if child.icon}<span class="context-icon">{child.icon}</span
+                                        >{/if}
+                                    {child.label}
+                                </button>
+                            </li>
+                        {/each}
+                    </menu>
+                {/if}
             </li>
         {/if}
     {/each}
 </menu>
 
 <style>
+    .item-wrapper {
+        position: relative;
+    }
+
     .context-menu {
         position: fixed;
         z-index: 200;
@@ -109,5 +158,24 @@
         height: 1px;
         background: var(--border);
         margin: 0.25rem 0;
+    }
+
+    .item-wrapper {
+        position: relative;
+    }
+
+    .has-children {
+        justify-content: space-between;
+    }
+
+    .submenu-arrow {
+        margin-left: auto;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .submenu {
+        position: fixed;
+        z-index: 201;
     }
 </style>
